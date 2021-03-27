@@ -192,40 +192,10 @@ namespace FFMPEG_Demo.Controllers
             var obj = new { alert = _alert };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
-
         [HttpGet]
-        public HttpResponseMessage M3u8infoNew(string id = null)
+        public HttpResponseMessage MediaInfo()
         {
-            string path = @"D:\ffmpeg_demo\" + id;
-            //var path = System.Web.HttpContext.Current.Server.MapPath("~/player_content/" + id);
-            string filename = "index.m3u8";
-            var fullpath = Path.Combine(path, filename);
-            string _alert = null;
-            if (Directory.Exists(path))
-            {
-                if (File.Exists(fullpath))
-                {
-                    var dataBytes = File.ReadAllBytes(fullpath);
-                    var dataStream = new MemoryStream(dataBytes);
-                    dataStream = M3u8DataManipulation(dataStream, id);
-
-                    HttpResponseMessage httpResponseMessage = Request.CreateResponse(HttpStatusCode.OK);
-                    httpResponseMessage.Content = new StreamContent(dataStream);
-                    httpResponseMessage.Content.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("attachment");
-                    httpResponseMessage.Content.Headers.ContentDisposition.FileName = filename;
-                    httpResponseMessage.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
-                    return httpResponseMessage;
-                }
-                else
-                {
-                    _alert = "file not found";
-                }
-            }
-            else
-            {
-                _alert = "file not found";
-            }
-            var obj = new { alert = _alert };
+            var obj = new { alert = "MediaInfo" };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
 
@@ -251,7 +221,8 @@ namespace FFMPEG_Demo.Controllers
         [NonAction]
         private void RunSSL(string name)
         {
-            string path = @"D:\ffmpeg_demo\" + name;
+            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string path = base_content_storage + name;
             string command = "openssl rand 16 > enc.key";
 
             Process p = new Process();
@@ -274,7 +245,8 @@ namespace FFMPEG_Demo.Controllers
         [NonAction]
         private void CreateKeyInfo(string name)
         {
-            string path = @"D:\ffmpeg_demo\" + name + @"\enc.keyinfo";
+            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string path = base_content_storage + name + @"\enc.keyinfo";
             // Check if file already exists. If yes, delete it. 
             if (File.Exists(path))
             {
