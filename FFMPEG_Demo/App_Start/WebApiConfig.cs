@@ -28,6 +28,14 @@ namespace FFMPEG_Demo
             // Web API routes
             config.MapHttpAttributeRoutes();
             config.Routes.MapHttpRoute(
+               name: "ActionIdFile",
+               routeTemplate: "api/{controller}/{action}/{id}/{filename}"
+           );
+            config.Routes.MapHttpRoute(
+               name: "ActionId",
+               routeTemplate: "api/{controller}/{action}/{id}"
+           );
+            config.Routes.MapHttpRoute(
                 name: "Action",
                 routeTemplate: "api/{controller}/{action}"
             );
