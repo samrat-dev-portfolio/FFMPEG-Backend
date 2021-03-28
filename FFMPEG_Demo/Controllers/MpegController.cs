@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.Http;
 using System.Web.Http.Description;
@@ -225,16 +226,87 @@ namespace FFMPEG_Demo.Controllers
             var fullpath = Path.Combine(base_content_storage, id, "block.txt");
             string currentFrame = null;
             string status = null;
+            string data = null;
             if (File.Exists(fullpath))
             {
+                FileStream logFileStream = new FileStream(fullpath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                byte[] buffer;
+                try
+                {
+                    int length = (int)logFileStream.Length;
+                    buffer = new byte[length];
+                    int count;
+                    int sum = 0;
+                    while ((count = logFileStream.Read(buffer, sum, length - sum)) > 0)
+                    {
+                        sum += count;
+                    }
+                }
+                finally
+                {
+                    logFileStream.Close();
+                }
+                data = Encoding.UTF8.GetString(buffer, 0, buffer.Length);
 
-                string data = File.ReadAllText(fullpath);
                 currentFrame = getInfoPattern(data, "progress");
                 status = getInfoPattern(data, "progress_status");
             }
             var obj = new { status, currentFrame };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
+        [HttpGet]
+        public HttpResponseMessage Conversion(string id = null)
+        {
+            string _alert = null;
+            StringBuilder output = new StringBuilder();
+            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string mp4_filename = ConfigurationManager.AppSettings["mp4_filename"];
+            var fullpath = Path.Combine(base_content_storage, id);
+            if (Directory.Exists(fullpath))
+            {
+                string command = "ffmpeg -progress block.txt -y -i " + mp4_filename + " -hls_time 10 -hls_key_info_file enc.keyinfo -hls_playlist_type vod -hls_segment_filename \"segmentNo%d.ts\" index.m3u8";
+                if (File.Exists(fullpath + "/" + mp4_filename))
+                {
+                    Process p = new Process();
+                    p.StartInfo.FileName = "cmd.exe";
+                    p.StartInfo.Arguments = "/c " + command;
+                    p.StartInfo.WorkingDirectory = fullpath;
+                    p.StartInfo.UseShellExecute = false;
+                    p.StartInfo.CreateNoWindow = true;
+                    p.StartInfo.RedirectStandardOutput = true;
+                    p.StartInfo.RedirectStandardError = true;
+
+                    p.ErrorDataReceived += new DataReceivedEventHandler((s, e) =>
+                    {
+                        if (e.Data != null)
+                            output.Append(e.Data);
+                    });
+
+                    p.OutputDataReceived += new DataReceivedEventHandler((s, e) =>
+                    {
+                        if (e.Data != null)
+                            output.Append(e.Data);
+                    });
+
+                    p.Start();
+                    p.BeginErrorReadLine();
+                    p.BeginOutputReadLine();
+                    // Get the output into a string
+                    //string result = p.StandardOutput.ReadToEnd();
+                    //string err = p.StandardError.ReadToEnd();                   
+                    p.WaitForExit();
+                    _alert = output.ToString();
+                    //p.Close();
+                }
+                else
+                {
+                    _alert = "File not found";
+                }
+            }
+            var obj = new { alert = _alert };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
+
 
         #region IgnoreApi
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -336,7 +408,7 @@ namespace FFMPEG_Demo.Controllers
         {
             string _alert = null;
             string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
-            string mp4_filename = "Aawara_Shaam.mp4";
+            string mp4_filename = ConfigurationManager.AppSettings["mp4_filename"];
             string path = base_content_storage + name;
             string command = "ffmpeg -i " + mp4_filename;
 
