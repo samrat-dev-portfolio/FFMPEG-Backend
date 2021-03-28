@@ -16,6 +16,8 @@ namespace FFMPEG_Demo.Controllers
        https://www.codegrepper.com/code-examples/csharp/C%23+generate+a+new+guid
        https://www.codeproject.com/Articles/25983/How-to-Execute-a-Command-in-C
        https://hlsbook.net/category/ffmpeg/
+       https://stackoverflow.com/questions/4291912/process-start-how-to-get-the-output
+
     */
     public class MpegController : ApiController
     {
@@ -193,9 +195,44 @@ namespace FFMPEG_Demo.Controllers
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
         [HttpGet]
-        public HttpResponseMessage MediaInfo()
+        public HttpResponseMessage MediaInfo(string id = null)
         {
-            var obj = new { alert = "MediaInfo" };
+            string info = RunFFM_Info(id);
+            string duration = getInfoPattern(info, "duration");
+            string fps = getInfoPattern(info, "fps");
+            string frame = "0";
+            if (!string.IsNullOrEmpty(duration) && !string.IsNullOrEmpty(fps))
+            {
+                double _frame = 0;
+                string[] ds = duration.Split(':');
+                if (ds.Length == 3)
+                {
+                    double hour = Convert.ToDouble(ds[0]) * 60 * 60;
+                    double min = Convert.ToDouble(ds[1]) * 60;
+                    double sec = Convert.ToDouble(ds[2]);
+                    _frame = (sec + min + hour) * Convert.ToDouble(fps);
+                }
+                frame = Convert.ToString(_frame);
+            }
+
+            var obj = new { duration, fps, frame };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
+        [HttpGet]
+        public HttpResponseMessage ConversionProgressInfo(string id = null)
+        {
+            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            var fullpath = Path.Combine(base_content_storage, id, "block.txt");
+            string currentFrame = null;
+            string status = null;
+            if (File.Exists(fullpath))
+            {
+
+                string data = File.ReadAllText(fullpath);
+                currentFrame = getInfoPattern(data, "progress");
+                status = getInfoPattern(data, "progress_status");
+            }
+            var obj = new { status, currentFrame };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
 
@@ -293,6 +330,76 @@ namespace FFMPEG_Demo.Controllers
             return manipulationStream;
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [NonAction]
+        private string RunFFM_Info(string name)
+        {
+            string _alert = null;
+            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string mp4_filename = "Aawara_Shaam.mp4";
+            string path = base_content_storage + name;
+            string command = "ffmpeg -i " + mp4_filename;
+
+            if (File.Exists(path + "/" + mp4_filename))
+            {
+                Process p = new Process();
+                p.StartInfo.FileName = "cmd.exe";
+                p.StartInfo.Arguments = "/c " + command;
+                p.StartInfo.WorkingDirectory = path;
+                p.StartInfo.UseShellExecute = false;
+                // Do not create the black window.
+                p.StartInfo.CreateNoWindow = true;
+                // This means that it will be redirected to the Process.StandardOutput StreamReader.
+                p.StartInfo.RedirectStandardOutput = true;
+                p.StartInfo.RedirectStandardError = true;
+                p.Start();
+                // Get the output into a string
+                string result = p.StandardOutput.ReadToEnd();
+                string err = p.StandardError.ReadToEnd();
+                result += "\n" + err;
+                p.WaitForExit();
+                //p.Close();
+                _alert = result;
+            }
+            return _alert;
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [NonAction]
+        private string getInfoPattern(string str, string types)
+        {
+            string pattern = "";
+            if ("duration" == types)
+            {
+                pattern = @"(?<=Duration: )[\w\:.]+";
+            }
+            else if ("fps" == types)
+            {
+                pattern = @"[\d]+(?= fps)";
+            }
+            else if ("progress" == types)
+            {
+                pattern = @"(?<=frame=)[\d]+";
+            }
+            else if ("progress_status" == types)
+            {
+                pattern = @"(?<=progress=)[\w]+";
+            }
+            RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.Multiline;
+            MatchCollection match = Regex.Matches(str, pattern, options);
+            if (match.Count > 0)
+            {
+                if ("progress" == types || "progress_status" == types)
+                {
+                    str = match[match.Count - 1].Value.ToString().Trim();
+                }
+                else
+                {
+                    str = match[0].Value.ToString().Trim();
+                }
+            }
+            return str;
+        }
 
         #endregion
     }
