@@ -1,0 +1,11 @@
+﻿Resource
+	https://www.codegrepper.com/code-examples/csharp/C%23+generate+a+new+guid
+    https://www.codeproject.com/Articles/25983/How-to-Execute-a-Command-in-C
+    https://hlsbook.net/category/ffmpeg/
+    https://stackoverflow.com/questions/4291912/process-start-how-to-get-the-output
+
+Code Plan
+   Tokenized URLs of HLS Stream
+   http://example.com/hls/playlist.m3u8?token=4180da90a6973bc8bd801bfe49f04a&expiry=1526231040535
+   http://example.com/hls/segment001.ts?token=4180da90a6973bc8bd801bfe49f04a&expiry=1526231040535
+   And so trying to get http://example.com/hls/segment001.ts will result in 403 or other error status.

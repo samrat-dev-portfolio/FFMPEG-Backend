@@ -328,6 +328,7 @@
     <Content Include="main\venobox\venobox.js" />
     <Content Include="main\venobox\venobox.min.css" />
     <Content Include="main\venobox\venobox.min.js" />
+    <Content Include="note\dev_resouece.txt" />
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
     <Content Include="Areas\HelpPage\Views\Web.config" />

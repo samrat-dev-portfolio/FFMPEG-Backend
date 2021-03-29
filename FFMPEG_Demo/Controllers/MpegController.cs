@@ -13,13 +13,6 @@ using System.Web.Http.Description;
 
 namespace FFMPEG_Demo.Controllers
 {
-    /* Resource
-       https://www.codegrepper.com/code-examples/csharp/C%23+generate+a+new+guid
-       https://www.codeproject.com/Articles/25983/How-to-Execute-a-Command-in-C
-       https://hlsbook.net/category/ffmpeg/
-       https://stackoverflow.com/questions/4291912/process-start-how-to-get-the-output
-
-    */
     public class MpegController : ApiController
     {
         [HttpGet]
@@ -306,6 +299,16 @@ namespace FFMPEG_Demo.Controllers
             var obj = new { alert = _alert };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
+
+        /*------------------------------------------------------------*/
+        [HttpGet]
+        public HttpResponseMessage test(string x = null, string y = null)
+        {
+
+            var obj = new { alert = "test", x, y };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
+
 
 
         #region IgnoreApi
