@@ -1,11 +1,15 @@
 ﻿using FFMPEG_Demo.Models;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Claims;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.Http;
@@ -300,17 +304,6 @@ namespace FFMPEG_Demo.Controllers
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
 
-        /*------------------------------------------------------------*/
-        [HttpGet]
-        public HttpResponseMessage test(string x = null, string y = null)
-        {
-
-            var obj = new { alert = "test", x, y };
-            return Request.CreateResponse(HttpStatusCode.OK, obj);
-        }
-
-
-
         #region IgnoreApi
         [ApiExplorerSettings(IgnoreApi = true)]
         [NonAction]
@@ -474,6 +467,72 @@ namespace FFMPEG_Demo.Controllers
                 }
             }
             return str;
+        }
+
+        #endregion
+
+        /*------------------------------------------------------------*/
+        #region Testing
+        [HttpGet]
+        public HttpResponseMessage test(string x = null, string y = null)
+        {
+            var obj = new { alert = "test", x, y };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
+        [HttpGet]
+        public HttpResponseMessage test_token(string x = null, string y = null)
+        {
+            string key = "my_secret_key_12345";
+            var issuer = "ffmpeg.demo.com";
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var permClaims = new List<Claim>();
+            permClaims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
+            permClaims.Add(new Claim("valid", "1"));
+            permClaims.Add(new Claim("userid", "21"));
+            permClaims.Add(new Claim("username", "samrat"));
+            permClaims.Add(new Claim("role", "admin"));
+
+            var token = new JwtSecurityToken(issuer,
+                            issuer,
+                            permClaims,
+                            expires: DateTime.Now.AddDays(1),
+                            signingCredentials: credentials);
+            var jwt_token = new JwtSecurityTokenHandler().WriteToken(token);
+            var obj = new { alert = "test_token", token = jwt_token };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
+        [HttpGet]
+        public HttpResponseMessage test_isauth_jwt(string token = null)
+        {
+            var obj = new { alert = "test_isauth" };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
+
+        [HttpGet]
+        public HttpResponseMessage test_isauth(string token = null)
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var my_token = handler.ReadJwtToken(token);
+            JwtPayload payloads = my_token.Payload;
+            string iss = null;
+            string valid = null;
+            string userid = null;
+            string username = null;
+            string role = null;
+
+            foreach (Claim c in payloads.Claims)
+            {
+                if ("valid" == c.Type) valid = c.Value;
+                else if ("userid" == c.Type) userid = c.Value;
+                else if ("username" == c.Type) username = c.Value;
+                else if ("role" == c.Type) role = c.Value;
+                else if ("iss" == c.Type) iss = c.Value;
+            }
+
+            var obj = new { alert = "test_isauth", iss, valid, userid, username, role };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
 
         #endregion

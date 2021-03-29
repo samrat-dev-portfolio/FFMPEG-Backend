@@ -9,3 +9,5 @@ Code Plan
    http://example.com/hls/playlist.m3u8?token=4180da90a6973bc8bd801bfe49f04a&expiry=1526231040535
    http://example.com/hls/segment001.ts?token=4180da90a6973bc8bd801bfe49f04a&expiry=1526231040535
    And so trying to get http://example.com/hls/segment001.ts will result in 403 or other error status.
+
+   https://medium.com/swlh/a-secure-implementation-of-json-web-tokens-jwt-in-c-710d06ea243
