@@ -1,5 +1,4 @@
-﻿using System.Web;
-using System.Web.Optimization;
+﻿using System.Web.Optimization;
 
 namespace FFMPEG_Demo
 {
@@ -22,6 +21,14 @@ namespace FFMPEG_Demo
             bundles.Add(new StyleBundle("~/Content/css").Include(
                       "~/Content/bootstrap.css",
                       "~/Content/site.css"));
+            //------------------ dev's choice bundle --------------------------
+            bundles.Add(new StyleBundle("~/Content/bootstrap/css").Include(
+                     "~/Content/bootstrap.min.css",
+                     "~/Content/Custom/welcome.css"));
+            bundles.Add(new ScriptBundle("~/Content/bootstrap/js").Include(
+                     "~/Scripts/jquery-3.5.1.slim.min.js",
+                     "~/Scripts/bootstrap.bundle.min.js",
+                     "~/Scripts/Custom/welcome.footer.css"));
         }
     }
 }
