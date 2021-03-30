@@ -28,7 +28,7 @@ namespace FFMPEG_Demo
             bundles.Add(new ScriptBundle("~/Content/bootstrap/js").Include(
                      "~/Scripts/jquery-3.5.1.slim.min.js",
                      "~/Scripts/bootstrap.bundle.min.js",
-                     "~/Scripts/Custom/welcome.footer.css"));
+                     "~/Scripts/Custom/welcome.footer.js"));
         }
     }
 }

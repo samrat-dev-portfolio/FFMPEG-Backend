@@ -8,10 +8,28 @@
 <head>
     <title> Home</title>
     @Styles.Render("~/Content/bootstrap/css")
+    <style>
+        .bg-1 {
+            background-image: url(https://cdn.pixabay.com/photo/2021/03/25/09/10/man-6122484_1280.jpg);
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+
+        .b-0 {
+            bottom: 6%;
+        }
+        .r-0 {
+            right: 7%;
+        }
+    </style>
 </head>
-<body>
+<body class="bg-1">
     <div class="container">
-       
+        <div class="row position-absolute b-0 r-0">
+            <div class="col-3">
+                <a class="btn btn-danger btn-lg" id="btn_proceed" href="#" role="button">Proceed</a>
+            </div>
+        </div>
     </div>
     @Scripts.Render("~/Content/bootstrap/js")
 </body>
