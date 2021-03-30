@@ -1,0 +1,54 @@
+  var data = [
+      {
+        albumId: 1,
+        id: 1,
+        title: "accusamus beatae ad facilis cum similique qui sunt",
+        url: "https://via.placeholder.com/600/92c952",
+        thumbnailUrl: "https://via.placeholder.com/150/92c952",
+      },
+      {
+        albumId: 1,
+        id: 2,
+        title: "reprehenderit est deserunt velit ipsam",
+        url: "https://via.placeholder.com/600/771796",
+        thumbnailUrl: "https://via.placeholder.com/150/771796",
+      },
+      {
+        albumId: 1,
+        id: 3,
+        title: "officia porro iure quia iusto qui ipsa ut modi",
+        url: "https://via.placeholder.com/600/24f355",
+        thumbnailUrl: "https://via.placeholder.com/150/24f355",
+      },
+    ];
+
+    _(data).forEachRight((d, k) => {
+      log({ key: k, text: d.title });
+    });
+
+------------------------------------------------------------------------------------------------------
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/8.2.3/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="https://www.gstatic.com/firebasejs/8.2.3/firebase-analytics.js"></script>
+
+<script>
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  var firebaseConfig = {
+    apiKey: "AIzaSyDpiIfc3PaYvlM6vdUWebtNke0OxQpmv1Q",
+    authDomain: "crwn-db-c15e9.firebaseapp.com",
+    projectId: "crwn-db-c15e9",
+    storageBucket: "crwn-db-c15e9.appspot.com",
+    messagingSenderId: "464040642457",
+    appId: "1:464040642457:web:c9a33a00fd6c43c239b508",
+    measurementId: "G-5CM5HN0182"
+  };
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  firebase.analytics();
+</script>
+------------------------------------------------------------------------------------------------------
+
