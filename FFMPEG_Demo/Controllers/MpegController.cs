@@ -1,8 +1,12 @@
-﻿using FFMPEG_Demo.Models;
+﻿using Dapper;
+using FFMPEG_Demo.Models;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+//using FFMPEG_Demo.Models;
+//using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
@@ -13,10 +17,12 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.Http;
+using System.Web.Http.Cors;
 using System.Web.Http.Description;
 
 namespace FFMPEG_Demo.Controllers
 {
+    [EnableCorsAttribute("*", "*", "*")]
     public class MpegController : ApiController
     {
         [HttpGet]
@@ -24,6 +30,8 @@ namespace FFMPEG_Demo.Controllers
         {
             return new string[] { "Welcome to Mpeg API" };
         }
+
+        #region Video Encryption
         [HttpGet]
         public HttpResponseMessage UniquID()
         {
@@ -471,8 +479,9 @@ namespace FFMPEG_Demo.Controllers
 
         #endregion
 
-        /*------------------------------------------------------------*/
-        #region Testing
+        #endregion
+
+        #region Testing of JWT
         [HttpGet]
         public HttpResponseMessage test(string x = null, string y = null)
         {
@@ -509,7 +518,6 @@ namespace FFMPEG_Demo.Controllers
             var obj = new { alert = "test_isauth" };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
-
         [HttpGet]
         public HttpResponseMessage test_isauth(string token = null)
         {
@@ -534,7 +542,20 @@ namespace FFMPEG_Demo.Controllers
             var obj = new { alert = "test_isauth", iss, valid, userid, username, role };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
-
         #endregion
+
+        #region UI
+        [HttpGet]
+        public HttpResponseMessage getClasses()
+        {
+            string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+            SqlConnection con = new SqlConnection(FFMpegCon);
+            string sql = @"SELECT * FROM [dbo].[tblClass]";
+            List<GetClassNames> my_class = con.Query<GetClassNames>(sql).ToList<GetClassNames>();
+            var obj = new { data = my_class };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
+        #endregion
+
     }
 }

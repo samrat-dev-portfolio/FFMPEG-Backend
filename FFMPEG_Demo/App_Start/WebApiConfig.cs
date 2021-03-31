@@ -45,6 +45,7 @@ namespace FFMPEG_Demo
                 defaults: new { id = RouteParameter.Optional }
             );
 
+            config.EnableCors();
             config.Formatters.Add(new CustomJsonFormatter());
             //config.Formatters.JsonFormatter.SerializerSettings.Formatting = Newtonsoft.Json.Formatting.Indented;
         }
