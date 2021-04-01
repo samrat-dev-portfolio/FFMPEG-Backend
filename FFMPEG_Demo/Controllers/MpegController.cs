@@ -550,7 +550,7 @@ namespace FFMPEG_Demo.Controllers
         {
             string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
             SqlConnection con = new SqlConnection(FFMpegCon);
-            string sql = @"SELECT * FROM [dbo].[tblClass]";
+            string sql = @"SELECT * FROM [dbo].[tblClass] order by id";
             List<GetClassNames> my_class = con.Query<GetClassNames>(sql).ToList<GetClassNames>();
             var obj = new { data = my_class };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
@@ -558,7 +558,11 @@ namespace FFMPEG_Demo.Controllers
         [HttpGet]
         public HttpResponseMessage getSubject(string class_id = null)
         {
-            var obj = new { data = class_id, alert = "getSubject" };
+            string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+            SqlConnection con = new SqlConnection(FFMpegCon);
+            string sql = @"SELECT * FROM [dbo].[tblSubject] order by id";
+            List<GetSubjectNames> my_subject = con.Query<GetSubjectNames>(sql).ToList<GetSubjectNames>();
+            var obj = new { data = my_subject };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
 

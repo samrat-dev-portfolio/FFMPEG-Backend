@@ -195,6 +195,7 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Models\CreateKeyBody.cs" />
+    <Compile Include="Models\GetSubjectNames.cs" />
     <Compile Include="Models\GetClassNames.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
