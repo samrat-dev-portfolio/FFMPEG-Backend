@@ -556,7 +556,7 @@ namespace FFMPEG_Demo.Controllers
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
         [HttpGet]
-        public HttpResponseMessage getSubject(string class_id = null)
+        public HttpResponseMessage getSubject()
         {
             string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
             SqlConnection con = new SqlConnection(FFMpegCon);
@@ -564,6 +564,25 @@ namespace FFMPEG_Demo.Controllers
             List<GetSubjectNames> my_subject = con.Query<GetSubjectNames>(sql).ToList<GetSubjectNames>();
             var obj = new { data = my_subject };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
+        [HttpGet]
+        public HttpResponseMessage getChapter(string cls = null, string sub = null)
+        {
+            var objAlert = new { data = "Please Provide Class and Subject Id" };
+            if (!string.IsNullOrEmpty(cls) && !string.IsNullOrEmpty(sub))
+            {
+                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                SqlConnection con = new SqlConnection(FFMpegCon);
+                var parameters = new { cls, sub };
+                string sql = @"SELECT * FROM [dbo].[tblChapter] WHERE classId = @cls AND subjectId = @sub order by id";
+                List<GetChapters> my_chapter = con.Query<GetChapters>(sql, parameters).ToList<GetChapters>();
+                var obj = new { data = my_chapter };
+                return Request.CreateResponse(HttpStatusCode.OK, obj);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, objAlert);
+            }
         }
 
         #endregion
