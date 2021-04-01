@@ -555,6 +555,13 @@ namespace FFMPEG_Demo.Controllers
             var obj = new { data = my_class };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
+        [HttpGet]
+        public HttpResponseMessage getSubject(string class_id = null)
+        {
+            var obj = new { data = class_id, alert = "getSubject" };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
+
         #endregion
 
     }
