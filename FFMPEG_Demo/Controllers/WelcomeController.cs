@@ -5,13 +5,17 @@ using System.Configuration;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Web.Http.Cors;
 using System.Web.Mvc;
 using System.Xml;
 
 
 namespace FFMPEG_Demo.Controllers
 {
+    [AllowCrossSite]
     public class WelcomeController : Controller
     {
         // GET: Welcome
@@ -43,77 +47,5 @@ namespace FFMPEG_Demo.Controllers
             //        @filedata = json,
             //    }).Single();
         }
-
-
-        #region Test
-        [NonAction]
-        public string Menu()
-        {
-            string xmlFiles = listXmlFiles();
-            string[] xmlArr = xmlFiles.Split(',');
-            foreach (var file in xmlArr)
-            {
-                if (!string.IsNullOrEmpty(file)) {
-                    var fileArr = file.Split('_');
-                    string my_class = null;
-                    string my_subject = null;
-                    string my_chapters = null;
-                    if(fileArr.Length >= 3)
-                    {
-                        my_class = fileArr[1];
-                        my_subject = fileArr[2];
-                        if(fileArr.Length > 3)
-                        {
-                            my_subject += fileArr[3];
-                        }
-                       
-                        my_chapters = xml2menu(file);
-                    }
-                }
-            }
-            return xmlFiles;
-        }
-        [NonAction]
-        public string listXmlFiles()
-        {
-            var path = System.Web.Hosting.HostingEnvironment.MapPath("~/XmlMenu");
-            string str = "";
-            if (Directory.Exists(path))
-            {
-                DirectoryInfo d = new DirectoryInfo(path);
-                FileInfo[] Files = d.GetFiles("*.xml");
-                foreach (FileInfo file in Files)
-                {
-                    str = str + ", " + file.Name;
-                }
-                string pattern = "[.]xml";
-                str = Regex.Replace(str, pattern, "");
-            }
-            return str;
-        }
-        [NonAction]
-        public string xml2menu(string name)
-        {
-            string ret = "";
-            var pathXmlFile = System.Web.Hosting.HostingEnvironment.MapPath("~/XmlMenu/" + name.Trim() + ".xml");
-            if (System.IO.File.Exists(pathXmlFile))
-            {
-                XmlDocument doc = new XmlDocument();
-                doc.Load(pathXmlFile);
-                string xmlcontents = doc.InnerXml;
-
-                string pattern = "(<[?]xml(.)+[?]>)|(</?Information>)";
-                string dataText = Regex.Replace(xmlcontents, pattern, "");
-
-                pattern = "(<Data[\\d]+>)";
-                dataText = Regex.Replace(dataText, pattern, "");
-
-                pattern = "(</Data[\\d]+>)";
-                dataText = Regex.Replace(dataText, pattern, "~");
-                ret = dataText;
-            }
-            return ret;
-        }
-        #endregion
     }
 }

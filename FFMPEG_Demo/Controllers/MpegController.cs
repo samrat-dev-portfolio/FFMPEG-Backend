@@ -16,13 +16,14 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Web;
 using System.Web.Http;
 using System.Web.Http.Cors;
 using System.Web.Http.Description;
 
 namespace FFMPEG_Demo.Controllers
 {
-    [EnableCorsAttribute("*", "*", "*")]
+    //[EnableCorsAttribute("*", "*", "*")]
     public class MpegController : ApiController
     {
         [HttpGet]
@@ -583,6 +584,38 @@ namespace FFMPEG_Demo.Controllers
             {
                 return Request.CreateResponse(HttpStatusCode.OK, objAlert);
             }
+        }
+
+        [HttpPost, HttpOptions]
+        //[Route("api/Mpeg/UploadFile")]
+        public HttpResponseMessage UploadFile(dynamic data)
+        {
+            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            HttpResponseMessage result = null;
+            var httpRequest = HttpContext.Current.Request;
+            if (httpRequest.Files.Count > 0)
+            {
+                var uid = httpRequest.Params.GetValues("uid");
+                var file_name = httpRequest.Params.GetValues("file_name");
+                var file_title = httpRequest.Params.GetValues("file_title");
+
+                var docfiles = new List<string>();
+                foreach (string file in httpRequest.Files)
+                {
+                    var postedFile = httpRequest.Files[file];
+                    var filePath = HttpContext.Current.Server.MapPath("~/App_Data/" + postedFile.FileName);
+                    postedFile.SaveAs(filePath);
+                    docfiles.Add(filePath);
+                }
+                result = Request.CreateResponse(HttpStatusCode.Created, docfiles);
+            }
+            else
+            {
+                result = Request.CreateResponse(HttpStatusCode.BadRequest);
+            }
+            return result;
+            //var obj = new { data = "4y5r" };
+            //return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
 
         #endregion
