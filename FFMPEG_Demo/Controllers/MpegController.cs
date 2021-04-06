@@ -18,7 +18,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.Http;
-using System.Web.Http.Cors;
 using System.Web.Http.Description;
 
 namespace FFMPEG_Demo.Controllers
@@ -586,36 +585,32 @@ namespace FFMPEG_Demo.Controllers
             }
         }
 
-        [HttpPost, HttpOptions]
-        //[Route("api/Mpeg/UploadFile")]
+        [HttpPost]
         public HttpResponseMessage UploadFile(dynamic data)
         {
             string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
             HttpResponseMessage result = null;
+            var obj = new { data = "" };
             var httpRequest = HttpContext.Current.Request;
             if (httpRequest.Files.Count > 0)
             {
-                var uid = httpRequest.Params.GetValues("uid");
-                var file_name = httpRequest.Params.GetValues("file_name");
-                var file_title = httpRequest.Params.GetValues("file_title");
-
-                var docfiles = new List<string>();
-                foreach (string file in httpRequest.Files)
-                {
-                    var postedFile = httpRequest.Files[file];
-                    var filePath = HttpContext.Current.Server.MapPath("~/App_Data/" + postedFile.FileName);
-                    postedFile.SaveAs(filePath);
-                    docfiles.Add(filePath);
-                }
-                result = Request.CreateResponse(HttpStatusCode.Created, docfiles);
+                var uid = httpRequest.Params.GetValues("uid")[0];
+                var file_name = httpRequest.Params.GetValues("file_name")[0];
+                var file_title = httpRequest.Params.GetValues("file_title")[0];
+                var postedFile = httpRequest.Files[0];
+                CreateFolder(uid);
+                //var filePath = HttpContext.Current.Server.MapPath("~/App_Data/" + postedFile.FileName);
+                var filePath = Path.Combine(base_content_storage, uid, postedFile.FileName);
+                postedFile.SaveAs(filePath);
+                obj = new { data = "File uploaded successfully" };
+                result = Request.CreateResponse(HttpStatusCode.Created, obj);
             }
             else
             {
+                obj = new { data = "Error Occured!" };
                 result = Request.CreateResponse(HttpStatusCode.BadRequest);
             }
             return result;
-            //var obj = new { data = "4y5r" };
-            //return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
 
         #endregion

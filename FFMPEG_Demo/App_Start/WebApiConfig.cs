@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Formatting;
 using System.Net.Http.Headers;
@@ -28,6 +29,10 @@ namespace FFMPEG_Demo
         {
             // add header to request if you want
             var response = await base.SendAsync(request, cancellationToken);
+            if(request.Method == HttpMethod.Options && response.StatusCode == HttpStatusCode.MethodNotAllowed)
+            {
+                response = new HttpResponseMessage(HttpStatusCode.OK);
+            }
             //response.Headers.Add("Access-Control-Allow-Origin", "*");
             return response;
         }
