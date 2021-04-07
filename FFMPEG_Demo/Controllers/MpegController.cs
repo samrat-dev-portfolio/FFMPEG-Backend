@@ -602,8 +602,20 @@ namespace FFMPEG_Demo.Controllers
                 //var filePath = HttpContext.Current.Server.MapPath("~/App_Data/" + postedFile.FileName);
                 var filePath = Path.Combine(base_content_storage, uid, postedFile.FileName);
                 postedFile.SaveAs(filePath);
-                obj = new { data = "File uploaded successfully" };
-                result = Request.CreateResponse(HttpStatusCode.Created, obj);
+                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                SqlConnection con = new SqlConnection(FFMpegCon);
+                string sql = @"INSERT INTO tblContent([contentID],[contentTitle],[contentFileName],[IsConversion])
+                VALUES (@contentID,@contentTitle,@contentFileName,@IsConversion)";
+                var insert_result = con.Execute(sql,
+                    new
+                    {
+                        @contentID = uid,
+                        @contentTitle = file_title,
+                        @contentFileName = file_name,
+                        @IsConversion = "0"
+                    });
+                var obj2 = new { data = "File uploaded successfully", result = Convert.ToString(insert_result) };
+                result = Request.CreateResponse(HttpStatusCode.Created, obj2);
             }
             else
             {
