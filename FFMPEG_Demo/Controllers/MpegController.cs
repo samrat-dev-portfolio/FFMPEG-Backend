@@ -80,6 +80,7 @@ namespace FFMPEG_Demo.Controllers
         [HttpPost]
         public HttpResponseMessage CreateKey(CreateKeyBody createKeyBody)
         {
+            //var uid = httpRequest.Params.GetValues("uid")[0];
             string _alert = null;
             if (!String.IsNullOrWhiteSpace(createKeyBody.Id))
             {
@@ -201,9 +202,14 @@ namespace FFMPEG_Demo.Controllers
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
         [HttpGet]
-        public HttpResponseMessage MediaInfo(string id = null)
+        public HttpResponseMessage MediaInfo(string id = null, string fname = null)
         {
-            string info = RunFFM_Info(id);
+            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(fname))
+            {
+                var obj1 = new { alert = "content id is empty!" };
+                return Request.CreateResponse(HttpStatusCode.OK, obj1);
+            }
+            string info = RunFFM_Info(id, fname);
             string duration = getInfoPattern(info, "duration");
             string fps = getInfoPattern(info, "fps");
             string frame = "0";
@@ -260,12 +266,13 @@ namespace FFMPEG_Demo.Controllers
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
         [HttpGet]
-        public HttpResponseMessage Conversion(string id = null)
+        public HttpResponseMessage Conversion(string id = null, string fname = null)
         {
             string _alert = null;
             StringBuilder output = new StringBuilder();
             string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
-            string mp4_filename = ConfigurationManager.AppSettings["mp4_filename"];
+            string ext = getExtension(fname);
+            string mp4_filename = ConfigurationManager.AppSettings["mp4_filename"] + "." + ext;
             var fullpath = Path.Combine(base_content_storage, id);
             if (Directory.Exists(fullpath))
             {
@@ -408,11 +415,11 @@ namespace FFMPEG_Demo.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [NonAction]
-        private string RunFFM_Info(string name)
+        private string RunFFM_Info(string name, string fname)
         {
             string _alert = null;
             string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
-            string mp4_filename = ConfigurationManager.AppSettings["mp4_filename"];
+            string mp4_filename = ConfigurationManager.AppSettings["mp4_filename"] + "." + getExtension(fname);
             string path = base_content_storage + name;
             string command = "ffmpeg -i " + mp4_filename;
 
@@ -476,7 +483,20 @@ namespace FFMPEG_Demo.Controllers
             }
             return str;
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [NonAction]
+        private string getExtension(string str)
+        {
+            string pattern = @"[^.]+$";
+            string ret = "";
+            RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.Multiline;
+            MatchCollection match = Regex.Matches(str, pattern, options);
+            if (match.Count > 0)
+            {
+                ret = match[0].Value.ToString().Trim();
+            }
+            return ret;
+        }
         #endregion
 
         #endregion
@@ -584,7 +604,9 @@ namespace FFMPEG_Demo.Controllers
                 return Request.CreateResponse(HttpStatusCode.OK, objAlert);
             }
         }
+        #endregion
 
+        #region UI Admin
         [HttpPost]
         public HttpResponseMessage UploadFile(dynamic data)
         {
@@ -595,12 +617,14 @@ namespace FFMPEG_Demo.Controllers
             if (httpRequest.Files.Count > 0)
             {
                 var uid = httpRequest.Params.GetValues("uid")[0];
+                string mp4_filename = ConfigurationManager.AppSettings["mp4_filename"];
                 var file_name = httpRequest.Params.GetValues("file_name")[0];
                 var file_title = httpRequest.Params.GetValues("file_title")[0];
                 var postedFile = httpRequest.Files[0];
+                string ext = getExtension(file_name);
                 CreateFolder(uid);
                 //var filePath = HttpContext.Current.Server.MapPath("~/App_Data/" + postedFile.FileName);
-                var filePath = Path.Combine(base_content_storage, uid, postedFile.FileName);
+                var filePath = Path.Combine(base_content_storage, uid, mp4_filename + "." + ext);
                 postedFile.SaveAs(filePath);
                 string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
                 SqlConnection con = new SqlConnection(FFMpegCon);
@@ -623,6 +647,16 @@ namespace FFMPEG_Demo.Controllers
                 result = Request.CreateResponse(HttpStatusCode.BadRequest);
             }
             return result;
+        }
+        [HttpGet]
+        public HttpResponseMessage getContent()
+        {
+            string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+            SqlConnection con = new SqlConnection(FFMpegCon);
+            string sql = @"SELECT * FROM [dbo].[tblContent] order by contentID desc";
+            List<GetContents> data = con.Query<GetContents>(sql).ToList<GetContents>();
+            var obj = new { data };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
 
         #endregion
