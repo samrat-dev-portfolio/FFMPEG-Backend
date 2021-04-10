@@ -92,6 +92,7 @@ namespace FFMPEG_Demo.Controllers
                 }
                 //open ssl cmd here
                 RunSSL(createKeyBody.Id);
+                Key2DB(createKeyBody.Id);
                 _alert = "Key File Created Successfully";
             }
             else
@@ -610,6 +611,11 @@ namespace FFMPEG_Demo.Controllers
         [HttpPost]
         public HttpResponseMessage UploadFile(dynamic data)
         {
+            /* Info
+             * IsConversion 0 mean just uploaded
+             * IsConversion 1 mean just conversion started
+             * IsConversion 2 mean conversion progress finished             
+             */
             string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
             HttpResponseMessage result = null;
             var obj = new { data = "" };
@@ -658,6 +664,111 @@ namespace FFMPEG_Demo.Controllers
             var obj = new { data };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
+        [HttpPost]
+        public HttpResponseMessage RestoreKey2SD(CreateKeyBody createKeyBody)
+        {
+            string _alert = null;
+            if (!String.IsNullOrWhiteSpace(createKeyBody.Id))
+            {
+                string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+                string path = base_content_storage + createKeyBody.Id;
+                string keyFile = Path.Combine(path, "enc.key");
+                string OpenKey = null;
+                if (Directory.Exists(path))
+                {
+                    //get key from db
+                    string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                    SqlConnection con = new SqlConnection(FFMpegCon);
+                    OpenKey = con.ExecuteScalar<string>("SELECT OpenKey FROM tblContent WHERE contentID = @contentID", new
+                    {
+                        @contentID = createKeyBody.Id
+                    });
+                    if (!File.Exists(keyFile))
+                    {
+                        using (FileStream fs = File.Create(keyFile))
+                        {
+                            byte[] OpenKeyB = Encoding.Default.GetBytes(OpenKey);
+                            fs.Write(OpenKeyB, 0, OpenKeyB.Length);
+                        }
+                    }
+                }
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Key restore to device" });
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide content id" });
+            }
+        }
+        [HttpPost]
+        public HttpResponseMessage RemoveKeyFromSD(CreateKeyBody createKeyBody)
+        {
+            string _alert = null;
+            if (!String.IsNullOrWhiteSpace(createKeyBody.Id))
+            {
+                string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+                string KeyFile = Path.Combine(base_content_storage, createKeyBody.Id, "enc.key");
+                if (File.Exists(KeyFile))
+                {
+                    File.Delete(KeyFile);
+                }
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Key remove from device" });
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide content id" });
+            }
+        }
+        [HttpPost]
+        public HttpResponseMessage ConversionEnded(CreateKeyBody createKeyBody)
+        {
+            string _alert = null;
+            if (!String.IsNullOrWhiteSpace(createKeyBody.Id))
+            {
+                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                SqlConnection con = new SqlConnection(FFMpegCon);
+                string sql = @"UPDATE tblContent SET [IsConversion]=@IsConversion WHERE [contentID]=@contentID";
+                var update_result = con.Execute(sql,
+                        new
+                        {
+                            @contentID = createKeyBody.Id,
+                            @IsConversion = "2"
+                        });
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Task after end of conversion has been completed" });
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide content id" });
+            }
+        }
+
+        #region IgnoreApi
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [NonAction]
+        private void Key2DB(string contentId)
+        {
+            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            var fullpath = Path.Combine(base_content_storage, contentId, "enc.key");
+            if (Directory.Exists(base_content_storage + contentId))
+            {
+                if (File.Exists(fullpath))
+                {
+                    var dataBytes = File.ReadAllBytes(fullpath);
+                    string OpenKey = Encoding.Default.GetString(dataBytes);
+                    string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                    SqlConnection con = new SqlConnection(FFMpegCon);
+                    string sql = @"UPDATE tblContent SET [IsConversion]=@IsConversion,[OpenKey]=@OpenKey
+                           WHERE [contentID]=@contentID";
+                    var update_result = con.Execute(sql,
+                        new
+                        {
+                            @contentID = contentId,
+                            @IsConversion = "1",
+                            @OpenKey = OpenKey
+                        });
+                }
+            }
+        }
+        #endregion
 
         #endregion
 
