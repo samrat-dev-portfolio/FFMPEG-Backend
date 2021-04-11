@@ -210,6 +210,11 @@ namespace FFMPEG_Demo.Controllers
                 var obj1 = new { alert = "content id is empty!" };
                 return Request.CreateResponse(HttpStatusCode.OK, obj1);
             }
+            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            if (!Directory.Exists(base_content_storage + id))
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { alert = "content id is not exist!" });
+            }
             string info = RunFFM_Info(id, fname);
             string duration = getInfoPattern(info, "duration");
             string fps = getInfoPattern(info, "fps");
@@ -667,7 +672,6 @@ namespace FFMPEG_Demo.Controllers
         [HttpPost]
         public HttpResponseMessage RestoreKey2SD(CreateKeyBody createKeyBody)
         {
-            string _alert = null;
             if (!String.IsNullOrWhiteSpace(createKeyBody.Id))
             {
                 string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
@@ -702,7 +706,6 @@ namespace FFMPEG_Demo.Controllers
         [HttpPost]
         public HttpResponseMessage RemoveKeyFromSD(CreateKeyBody createKeyBody)
         {
-            string _alert = null;
             if (!String.IsNullOrWhiteSpace(createKeyBody.Id))
             {
                 string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
@@ -721,7 +724,6 @@ namespace FFMPEG_Demo.Controllers
         [HttpPost]
         public HttpResponseMessage ConversionEnded(CreateKeyBody createKeyBody)
         {
-            string _alert = null;
             if (!String.IsNullOrWhiteSpace(createKeyBody.Id))
             {
                 string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
