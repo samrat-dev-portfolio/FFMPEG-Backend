@@ -3,6 +3,7 @@ using FFMPEG_Demo.Models;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Configuration;
 //using FFMPEG_Demo.Models;
 //using System.Collections.Generic;
@@ -743,8 +744,9 @@ namespace FFMPEG_Demo.Controllers
             }
         }
         [HttpGet]
-        public HttpResponseMessage getContentPage([FromBody] GetContentPage getContentPage)
+        public HttpResponseMessage getContentPage([FromUri] GetContentPage getContentPage)
         {
+            NameValueCollection nvc = HttpUtility.ParseQueryString(Request.RequestUri.Query);
             string pageindex = getContentPage.pageindex;
             string limit = getContentPage.limit;
             string orderby = getContentPage.orderby;
@@ -801,9 +803,9 @@ namespace FFMPEG_Demo.Controllers
             SqlConnection con = new SqlConnection(FFMpegCon);
             string sql = @"SELECT * FROM [dbo].[tblContent]" + _where + " order by " + orderby + " " + desc + " OFFSET " + _offset + " rows FETCH NEXT " + _limit + " rows only";
             List<GetContents> data = con.Query<GetContents>(sql).ToList<GetContents>();
-            string count = con.ExecuteScalar<string>("SELECT count(*) FROM tblContent");
+            string count = con.ExecuteScalar<string>("SELECT count(*) FROM tblContent" + _where);
 
-            int _count = 0;
+            int _count = data.Count();
             Int32.TryParse(count, out _count);
             int _totalPage = Convert.ToInt32(_count / _limit);
             if ((_count % _limit) > 0)
