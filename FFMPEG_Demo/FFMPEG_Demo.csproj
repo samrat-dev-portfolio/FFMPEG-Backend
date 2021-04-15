@@ -195,6 +195,7 @@
     </Compile>
     <Compile Include="Models\CreateKeyBody.cs" />
     <Compile Include="Models\GetChapters.cs" />
+    <Compile Include="Models\GetContentPage.cs" />
     <Compile Include="Models\GetContents.cs" />
     <Compile Include="Models\GetSubjectNames.cs" />
     <Compile Include="Models\GetClassNames.cs" />

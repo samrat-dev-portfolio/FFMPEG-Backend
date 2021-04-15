@@ -742,7 +742,78 @@ namespace FFMPEG_Demo.Controllers
                 return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide content id" });
             }
         }
+        [HttpGet]
+        public HttpResponseMessage getContentPage([FromBody] GetContentPage getContentPage)
+        {
+            string pageindex = getContentPage.pageindex;
+            string limit = getContentPage.limit;
+            string orderby = getContentPage.orderby;
+            string desc = getContentPage.desc; // 'true'|'false'
+            string contentID = getContentPage.contentID;
+            string contentFileName = getContentPage.contentFileName;
+            string contentTitle = getContentPage.contentTitle;
 
+            #region Constant           
+            if (orderby == null)
+            {
+                orderby = "contentID";
+            }
+            if (desc == "false")
+            {
+                desc = "asc";
+            }
+            else if (desc == "true" || desc == null)
+            {
+                desc = "desc";
+            }
+            string _where = "";
+            if (contentFileName != null)
+            {
+                _where = " WHERE contentFileName like '%" + contentFileName + "%'";
+            }
+            else if (contentID != null)
+            {
+                _where = " WHERE contentID like '%" + contentID + "%'";
+            }
+            else if (contentTitle != null)
+            {
+                _where = " WHERE contentTitle like '%" + contentTitle + "%'";
+            }
+
+            int _limit = 3;
+            int _pageindex = 0;
+            if (limit != null)
+            {
+                Int32.TryParse(limit, out _limit);
+                if (_limit < 3)
+                    _limit = 3;
+            }
+            if (pageindex != null)
+            {
+                Int32.TryParse(pageindex, out _pageindex);
+                if (_pageindex < 0)
+                    _pageindex = 0;
+            }
+            int _offset = _pageindex * _limit;
+
+            #endregion
+            string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+            SqlConnection con = new SqlConnection(FFMpegCon);
+            string sql = @"SELECT * FROM [dbo].[tblContent]" + _where + " order by " + orderby + " " + desc + " OFFSET " + _offset + " rows FETCH NEXT " + _limit + " rows only";
+            List<GetContents> data = con.Query<GetContents>(sql).ToList<GetContents>();
+            string count = con.ExecuteScalar<string>("SELECT count(*) FROM tblContent");
+
+            int _count = 0;
+            Int32.TryParse(count, out _count);
+            int _totalPage = Convert.ToInt32(_count / _limit);
+            if ((_count % _limit) > 0)
+            {
+                _totalPage += 1;
+            }
+
+            var obj = new { data, pageindex = Convert.ToString(_pageindex), totalPage = Convert.ToString(_totalPage) };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
         #region IgnoreApi
         [ApiExplorerSettings(IgnoreApi = true)]
         [NonAction]
