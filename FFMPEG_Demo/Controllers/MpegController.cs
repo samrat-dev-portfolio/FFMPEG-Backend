@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using FFMPEG_Demo.Models;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -73,7 +74,7 @@ namespace FFMPEG_Demo.Controllers
             }
             else
             {
-                _alert = "Directory Not Existed";
+                _alert = "Directory does not existed.";
             }
             var obj = new { alert = _alert };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
@@ -736,6 +737,7 @@ namespace FFMPEG_Demo.Controllers
                             @contentID = createKeyBody.Id,
                             @IsConversion = "2"
                         });
+                DeleteRawMp4(createKeyBody);
                 return Request.CreateResponse(HttpStatusCode.OK, new { data = "Task after end of conversion has been completed" });
             }
             else
@@ -816,6 +818,37 @@ namespace FFMPEG_Demo.Controllers
             var obj = new { data, pageindex = Convert.ToString(_pageindex), totalPage = Convert.ToString(_totalPage) };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
+        [HttpPost]
+        public HttpResponseMessage Deletecontent(CreateKeyBody createKeyBody)
+        {
+            if (!String.IsNullOrWhiteSpace(createKeyBody.Id))
+            {
+                string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+                string path = base_content_storage + createKeyBody.Id;
+                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                SqlConnection con = new SqlConnection(FFMpegCon);
+                string sql = @"DELETE FROM tblContent WHERE [contentID]=@contentID";
+                var delete_result = con.Execute(sql,
+                    new
+                    {
+                        @contentid = createKeyBody.Id
+                    });
+                string _alert = "";
+                if (delete_result > 0)
+                {
+                    _alert = "ContentID deleted from db. ";
+                }
+                var res = DeleteFolder(createKeyBody.Id).Content.ReadAsStringAsync().Result;
+                var jsonString = JsonConvert.DeserializeObject<Dictionary<string, string>>(res);
+                _alert += jsonString["alert"].ToString();
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = _alert });
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide content id" });
+            }
+        }
+
         #region IgnoreApi
         [ApiExplorerSettings(IgnoreApi = true)]
         [NonAction]
@@ -840,6 +873,29 @@ namespace FFMPEG_Demo.Controllers
                             @IsConversion = "1",
                             @OpenKey = OpenKey
                         });
+                }
+            }
+        }
+        [NonAction]
+        private void DeleteRawMp4(CreateKeyBody createKeyBody)
+        {
+            string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+            SqlConnection con = new SqlConnection(FFMpegCon);
+            string sql = @"SELECT * FROM tblContent WHERE [contentID]=@contentID";
+            List<GetContents> data = con.Query<GetContents>(sql,
+                    new
+                    {
+                        @contentID = createKeyBody.Id,
+                        @IsConversion = "2"
+                    }).ToList<GetContents>();
+            if (data.Count() > 0)
+            {
+                string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+                string filename = data[0].contentFileName;
+                var filePath = Path.Combine(base_content_storage, createKeyBody.Id, filename);
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
                 }
             }
         }
