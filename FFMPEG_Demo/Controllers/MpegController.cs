@@ -110,14 +110,22 @@ namespace FFMPEG_Demo.Controllers
         {
             //var path = System.Web.HttpContext.Current.Server.MapPath("~/player_content/" + id);
             string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string path = base_content_storage + id;
+            string OpenKey = null;
             var fullpath = Path.Combine(base_content_storage, id, "enc.key");
             string _alert = null;
             if (Directory.Exists(base_content_storage + id))
             {
-                if (File.Exists(fullpath))
+                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                SqlConnection con = new SqlConnection(FFMpegCon);
+                OpenKey = con.ExecuteScalar<string>("SELECT OpenKey FROM tblContent WHERE contentID = @contentID", new
                 {
-                    var dataBytes = File.ReadAllBytes(fullpath);
-                    var dataStream = new MemoryStream(dataBytes);
+                    @contentID = id
+                });
+                if (!string.IsNullOrEmpty(OpenKey))
+                {
+                    byte[] OpenKeyB = Encoding.Default.GetBytes(OpenKey);
+                    var dataStream = new MemoryStream(OpenKeyB);
                     HttpResponseMessage httpResponseMessage = Request.CreateResponse(HttpStatusCode.OK);
                     httpResponseMessage.Content = new StreamContent(dataStream);
                     httpResponseMessage.Content.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("attachment");
@@ -129,6 +137,21 @@ namespace FFMPEG_Demo.Controllers
                 {
                     _alert = "file not found";
                 }
+                /* if (File.Exists(fullpath))
+                 {
+                     var dataBytes = File.ReadAllBytes(fullpath);
+                     var dataStream = new MemoryStream(dataBytes);
+                     HttpResponseMessage httpResponseMessage = Request.CreateResponse(HttpStatusCode.OK);
+                     httpResponseMessage.Content = new StreamContent(dataStream);
+                     httpResponseMessage.Content.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("attachment");
+                     httpResponseMessage.Content.Headers.ContentDisposition.FileName = "enc.key";
+                     httpResponseMessage.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                     return httpResponseMessage;
+                 }
+                 else
+                 {
+                     _alert = "file not found";
+                 }*/
             }
             else
             {
@@ -738,6 +761,7 @@ namespace FFMPEG_Demo.Controllers
                             @IsConversion = "2"
                         });
                 DeleteRawMp4(createKeyBody);
+                RemoveKeyFromSD(createKeyBody);
                 return Request.CreateResponse(HttpStatusCode.OK, new { data = "Task after end of conversion has been completed" });
             }
             else
@@ -891,8 +915,10 @@ namespace FFMPEG_Demo.Controllers
             if (data.Count() > 0)
             {
                 string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+                string mp4_filename = ConfigurationManager.AppSettings["mp4_filename"];
                 string filename = data[0].contentFileName;
-                var filePath = Path.Combine(base_content_storage, createKeyBody.Id, filename);
+                string ext = getExtension(filename);
+                var filePath = Path.Combine(base_content_storage, createKeyBody.Id, mp4_filename + "." + ext);
                 if (File.Exists(filePath))
                 {
                     File.Delete(filePath);
