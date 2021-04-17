@@ -873,6 +873,134 @@ namespace FFMPEG_Demo.Controllers
             }
         }
 
+        [HttpPost]
+        public HttpResponseMessage AddSubject(SetSubject setSubject)
+        {
+            if (!String.IsNullOrEmpty(setSubject.Name))
+            {
+                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                SqlConnection con = new SqlConnection(FFMpegCon);
+                string sql = @"INSERT INTO tblSubject([subjectName]) VALUES (@subjectName)";
+                var insert_result = con.Execute(sql,
+                    new
+                    {
+                        @subjectName = setSubject.Name
+                    });
+                return Request.CreateResponse(HttpStatusCode.Created, new { data = "data saved successfully" });
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide subject name" });
+            }
+        }
+        [HttpPost]
+        public HttpResponseMessage RemoveSubject(SetSubject setSubject)
+        {
+            if (!String.IsNullOrEmpty(setSubject.Id))
+            {
+                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                SqlConnection con = new SqlConnection(FFMpegCon);
+                string sql = @"DELETE FROM tblSubject WHERE [id] = @Id;
+                               DBCC CHECKIDENT([tblSubject], RESEED, 0);
+                               DBCC CHECKIDENT([tblSubject]);";
+                var insert_result = con.Execute(sql,
+                    new
+                    {
+                        @Id = setSubject.Id
+                    });
+                return Request.CreateResponse(HttpStatusCode.Created, new { data = "data removed successfully" });
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide subject id" });
+            }
+        }
+        [HttpPost]
+        public HttpResponseMessage PutSubject(SetSubject setSubject)
+        {
+            if (!String.IsNullOrEmpty(setSubject.Id) && !String.IsNullOrEmpty(setSubject.Name))
+            {
+                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                SqlConnection con = new SqlConnection(FFMpegCon);
+                string sql = @"UPDATE tblSubject SET [subjectName]=@subjectName WHERE [id] = @Id";
+                var insert_result = con.Execute(sql,
+                    new
+                    {
+                        @Id = setSubject.Id,
+                        @subjectName = setSubject.Name
+                    });
+                return Request.CreateResponse(HttpStatusCode.Created, new { data = "data saved successfully" });
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide subject id and name" });
+            }
+        }
+        [HttpPost]
+        public HttpResponseMessage AddClass(SetSubject setSubject)
+        {
+            if (!String.IsNullOrEmpty(setSubject.Name))
+            {
+                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                SqlConnection con = new SqlConnection(FFMpegCon);
+                string sql = @"INSERT INTO tblClass([className]) VALUES (@className)";
+                var insert_result = con.Execute(sql,
+                    new
+                    {
+                        @className = setSubject.Name
+                    });
+                return Request.CreateResponse(HttpStatusCode.Created, new { data = "data saved successfully" });
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide class name" });
+            }
+        }
+        [HttpPost]
+        public HttpResponseMessage RemoveClass(SetSubject setSubject)
+        {
+            if (!String.IsNullOrEmpty(setSubject.Id))
+            {
+                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                SqlConnection con = new SqlConnection(FFMpegCon);
+                string sql = @"DELETE FROM tblClass WHERE [id] = @Id;
+                               DBCC CHECKIDENT([tblClass], RESEED, 0);
+                               DBCC CHECKIDENT([tblClass]);";
+                var insert_result = con.Execute(sql,
+                    new
+                    {
+                        @Id = setSubject.Id
+                    });
+                return Request.CreateResponse(HttpStatusCode.Created, new { data = "data removed successfully" });
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide class id" });
+            }
+        }
+        [HttpPost]
+        public HttpResponseMessage PutClass(SetSubject setSubject)
+        {
+            if (!String.IsNullOrEmpty(setSubject.Id) && !String.IsNullOrEmpty(setSubject.Name))
+            {
+                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                SqlConnection con = new SqlConnection(FFMpegCon);
+                string sql = @"UPDATE tblClass SET [className]=@className WHERE [id] = @Id";
+                var insert_result = con.Execute(sql,
+                    new
+                    {
+                        @Id = setSubject.Id,
+                        @className = setSubject.Name
+                    });
+                return Request.CreateResponse(HttpStatusCode.Created, new { data = "data saved successfully" });
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide class id and name" });
+            }
+        }
+
+
         #region IgnoreApi
         [ApiExplorerSettings(IgnoreApi = true)]
         [NonAction]
