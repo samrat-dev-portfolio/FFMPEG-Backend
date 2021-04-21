@@ -28,9 +28,10 @@ namespace FFMPEG_Demo.Controllers
     public class MpegController : ApiController
     {
         [HttpGet]
-        public IEnumerable<string> Index()
+        public HttpResponseMessage Index()
         {
-            return new string[] { "Welcome to Mpeg API" };
+            var obj = new { data = "Welcome to Mpeg API" };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
 
         #region Video Encryption
@@ -47,7 +48,8 @@ namespace FFMPEG_Demo.Controllers
         public HttpResponseMessage CreateFolder(string name = null)
         {
             string _alert = null;
-            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string base_content_storage = GetStoragePath();
             string path = base_content_storage + name;
             if (!(Directory.Exists(path)))
             {
@@ -65,7 +67,8 @@ namespace FFMPEG_Demo.Controllers
         public HttpResponseMessage DeleteFolder(string name = null)
         {
             string _alert = null;
-            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string base_content_storage = GetStoragePath();
+            //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
             string path = base_content_storage + name;
             if ((Directory.Exists(path)))
             {
@@ -86,7 +89,8 @@ namespace FFMPEG_Demo.Controllers
             string _alert = null;
             if (!String.IsNullOrWhiteSpace(createKeyBody.Id))
             {
-                string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+                string base_content_storage = GetStoragePath();
+                //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
                 string path = base_content_storage + createKeyBody.Id;
                 if (!(Directory.Exists(path)))
                 {
@@ -109,7 +113,8 @@ namespace FFMPEG_Demo.Controllers
         public HttpResponseMessage Keyinfo(string id = null)
         {
             //var path = System.Web.HttpContext.Current.Server.MapPath("~/player_content/" + id);
-            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string base_content_storage = GetStoragePath();
+            //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
             string path = base_content_storage + id;
             string OpenKey = null;
             var fullpath = Path.Combine(base_content_storage, id, "enc.key");
@@ -164,7 +169,8 @@ namespace FFMPEG_Demo.Controllers
         public HttpResponseMessage M3u8info(string id = null)
         {
             //var path = System.Web.HttpContext.Current.Server.MapPath("~/player_content/" + id);
-            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string base_content_storage = GetStoragePath();
+            //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
             string filename = "index.m3u8";
             var fullpath = Path.Combine(base_content_storage, id, filename);
             string _alert = null;
@@ -198,7 +204,8 @@ namespace FFMPEG_Demo.Controllers
         public HttpResponseMessage Tsinfo(string id = null, string filename = null)
         {
             //var path = System.Web.HttpContext.Current.Server.MapPath("~/player_content/" + id);
-            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string base_content_storage = GetStoragePath();
+            //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
             //string filename = "index.m3u8";
             var fullpath = Path.Combine(base_content_storage, id, filename + ".ts");
             string _alert = null;
@@ -235,7 +242,8 @@ namespace FFMPEG_Demo.Controllers
                 var obj1 = new { alert = "content id is empty!" };
                 return Request.CreateResponse(HttpStatusCode.OK, obj1);
             }
-            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string base_content_storage = GetStoragePath();
+            //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
             if (!Directory.Exists(base_content_storage + id))
             {
                 return Request.CreateResponse(HttpStatusCode.OK, new { alert = "content id is not exist!" });
@@ -264,7 +272,8 @@ namespace FFMPEG_Demo.Controllers
         [HttpGet]
         public HttpResponseMessage ConversionProgressInfo(string id = null)
         {
-            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string base_content_storage = GetStoragePath();
+            //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
             var fullpath = Path.Combine(base_content_storage, id, "block.txt");
             string currentFrame = null;
             string status = null;
@@ -301,7 +310,8 @@ namespace FFMPEG_Demo.Controllers
         {
             string _alert = null;
             StringBuilder output = new StringBuilder();
-            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string base_content_storage = GetStoragePath();
+            //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
             string ext = getExtension(fname);
             string mp4_filename = ConfigurationManager.AppSettings["mp4_filename"] + "." + ext;
             var fullpath = Path.Combine(base_content_storage, id);
@@ -372,7 +382,8 @@ namespace FFMPEG_Demo.Controllers
         [NonAction]
         private void RunSSL(string name)
         {
-            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string base_content_storage = GetStoragePath();
+            //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
             string path = base_content_storage + name;
             string command = "openssl rand 16 > enc.key";
 
@@ -396,7 +407,8 @@ namespace FFMPEG_Demo.Controllers
         [NonAction]
         private void CreateKeyInfo(string name)
         {
-            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string base_content_storage = GetStoragePath();
+            //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
             string path = base_content_storage + name + @"\enc.keyinfo";
             // Check if file already exists. If yes, delete it. 
             if (File.Exists(path))
@@ -449,7 +461,8 @@ namespace FFMPEG_Demo.Controllers
         private string RunFFM_Info(string name, string fname)
         {
             string _alert = null;
-            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string base_content_storage = GetStoragePath();
+            //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
             string mp4_filename = ConfigurationManager.AppSettings["mp4_filename"] + "." + getExtension(fname);
             string path = base_content_storage + name;
             string command = "ffmpeg -i " + mp4_filename;
@@ -646,7 +659,8 @@ namespace FFMPEG_Demo.Controllers
              * IsConversion 1 mean just conversion started
              * IsConversion 2 mean conversion progress finished             
              */
-            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string base_content_storage = GetStoragePath();
             HttpResponseMessage result = null;
             var obj = new { data = "" };
             var httpRequest = HttpContext.Current.Request;
@@ -699,7 +713,8 @@ namespace FFMPEG_Demo.Controllers
         {
             if (!String.IsNullOrWhiteSpace(createKeyBody.Id))
             {
-                string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+                //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+                string base_content_storage = GetStoragePath();
                 string path = base_content_storage + createKeyBody.Id;
                 string keyFile = Path.Combine(path, "enc.key");
                 string OpenKey = null;
@@ -733,7 +748,8 @@ namespace FFMPEG_Demo.Controllers
         {
             if (!String.IsNullOrWhiteSpace(createKeyBody.Id))
             {
-                string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+                //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+                string base_content_storage = GetStoragePath();
                 string KeyFile = Path.Combine(base_content_storage, createKeyBody.Id, "enc.key");
                 if (File.Exists(KeyFile))
                 {
@@ -847,7 +863,8 @@ namespace FFMPEG_Demo.Controllers
         {
             if (!String.IsNullOrWhiteSpace(createKeyBody.Id))
             {
-                string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+                //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+                string base_content_storage = GetStoragePath();
                 string path = base_content_storage + createKeyBody.Id;
                 string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
                 SqlConnection con = new SqlConnection(FFMpegCon);
@@ -999,6 +1016,113 @@ namespace FFMPEG_Demo.Controllers
                 return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide class id and name" });
             }
         }
+        [HttpPost]
+        public HttpResponseMessage PutChapter(GetChapters getChapters)
+        {
+            string _alert = "";
+            //if (!String.IsNullOrEmpty(getChapters.contentID))
+            //{
+            //    _alert = "contentID is empty!";
+            //}
+            if (!String.IsNullOrEmpty(getChapters.id))
+            {
+                _alert = "ChapterID is empty!";
+            }
+            else if (!String.IsNullOrEmpty(getChapters.chapterName))
+            {
+                _alert = "chapterName is empty!";
+            }
+            else if (!String.IsNullOrEmpty(getChapters.subjectId))
+            {
+                _alert = "subjectId is empty!";
+            }
+            else if (!String.IsNullOrEmpty(getChapters.classId))
+            {
+                _alert = "classId is empty!";
+            }
+            else
+            {
+                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                SqlConnection con = new SqlConnection(FFMpegCon);
+                string sql = @"UPDATE tblChapter SET [contentID]=@contentID,chapterName=@chapterName,subjectId=@subjectId,classId=@classId
+                              WHERE [id] = @Id";
+                var insert_result = con.Execute(sql,
+                    new
+                    {
+                        @contentID = getChapters.contentID,
+                        @chapterName = getChapters.chapterName,
+                        @subjectId = getChapters.subjectId,
+                        @classId = getChapters.classId,
+                        @Id = getChapters.id,
+                    });
+                _alert = "data updated successfully!";
+                return Request.CreateResponse(HttpStatusCode.Created, new { data = _alert });
+            }
+            return Request.CreateResponse(HttpStatusCode.OK, new { data = _alert });
+        }
+        [HttpGet]
+        public HttpResponseMessage getChapterFilter([FromUri] GetChapterPage getChapterPage)
+        {
+            string pageindex = getChapterPage.pageindex;
+            string limit = getChapterPage.limit;
+            string orderby = getChapterPage.orderby;
+            string desc = getChapterPage.desc; // 'true'|'false'
+
+            string contentID = getChapterPage.contentID;
+            string id = getChapterPage.id;
+            string chapterName = getChapterPage.chapterName;
+            string subjectId = getChapterPage.subjectId;
+            string classId = getChapterPage.classId;
+
+            #region Constant           
+            if (orderby == null)
+            {
+                orderby = "chapterName";
+            }
+            if (desc == "false" || desc == null)
+            {
+                desc = "asc";
+            }
+            else if (desc == "true")
+            {
+                desc = "desc";
+            }
+            string _where = "";
+            if (chapterName != null)
+            {
+                _where = " WHERE chapterName like '%" + chapterName + "%'";
+            }
+            if (contentID != null)
+            {
+                if (_where == "")
+                    _where = " WHERE";
+                else
+                    _where += " AND";
+                _where += " contentID like '%" + contentID + "%'";
+            }
+
+
+
+            int _limit = 3;
+            int _pageindex = 0;
+            if (limit != null)
+            {
+                Int32.TryParse(limit, out _limit);
+                if (_limit < 3)
+                    _limit = 3;
+            }
+            if (pageindex != null)
+            {
+                Int32.TryParse(pageindex, out _pageindex);
+                if (_pageindex < 0)
+                    _pageindex = 0;
+            }
+            int _offset = _pageindex * _limit;
+
+            #endregion
+            var obj = new { };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
 
 
         #region IgnoreApi
@@ -1006,7 +1130,8 @@ namespace FFMPEG_Demo.Controllers
         [NonAction]
         private void Key2DB(string contentId)
         {
-            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            string base_content_storage = GetStoragePath();
+            //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
             var fullpath = Path.Combine(base_content_storage, contentId, "enc.key");
             if (Directory.Exists(base_content_storage + contentId))
             {
@@ -1042,7 +1167,8 @@ namespace FFMPEG_Demo.Controllers
                     }).ToList<GetContents>();
             if (data.Count() > 0)
             {
-                string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+                string base_content_storage = GetStoragePath();
+                //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
                 string mp4_filename = ConfigurationManager.AppSettings["mp4_filename"];
                 string filename = data[0].contentFileName;
                 string ext = getExtension(filename);
@@ -1052,6 +1178,13 @@ namespace FFMPEG_Demo.Controllers
                     File.Delete(filePath);
                 }
             }
+        }
+        [NonAction]
+        public string GetStoragePath()
+        {
+            string base_directory_name = ConfigurationManager.AppSettings["base_content_storage_project_root_directory_name"];
+            var filePath = HttpContext.Current.Server.MapPath("~/" + base_directory_name + "/");
+            return filePath;
         }
         #endregion
 

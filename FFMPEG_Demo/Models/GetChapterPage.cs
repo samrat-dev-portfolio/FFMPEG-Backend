@@ -5,8 +5,13 @@ using System.Web;
 
 namespace FFMPEG_Demo.Models
 {
-    public class GetChapters
+    public class GetChapterPage
     {
+        public string pageindex { get; set; }
+        public string limit { get; set; }
+        public string orderby { get; set; }
+        public string desc { get; set; }
+
         public string id { get; set; }
         public string chapterName { get; set; }
         public string subjectId { get; set; }

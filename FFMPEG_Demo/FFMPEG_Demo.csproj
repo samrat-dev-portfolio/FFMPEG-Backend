@@ -195,6 +195,7 @@
     </Compile>
     <Compile Include="Models\CreateKeyBody.cs" />
     <Compile Include="Models\DeleteFolderResponse.cs" />
+    <Compile Include="Models\GetChapterPage.cs" />
     <Compile Include="Models\GetChapters.cs" />
     <Compile Include="Models\GetContentPage.cs" />
     <Compile Include="Models\GetContents.cs" />
@@ -839,6 +840,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
+    <Folder Include="ffmpeg_demo\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">
