@@ -260,4 +260,3 @@ paket-files/
 __pycache__/
 *.pyc
 /FFMPEG_Demo/App_Data
-/FFMPEG_Demo/ffmpeg_demo
