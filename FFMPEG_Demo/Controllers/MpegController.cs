@@ -953,6 +953,7 @@ namespace FFMPEG_Demo.Controllers
                 return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide subject id and name" });
             }
         }
+
         [HttpPost]
         public HttpResponseMessage AddClass(SetSubject setSubject)
         {
@@ -1016,6 +1017,69 @@ namespace FFMPEG_Demo.Controllers
                 return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide class id and name" });
             }
         }
+
+        [HttpPost]
+        public HttpResponseMessage AddChapter(GetChapters getChapters)
+        {
+            string _alert = "";
+            //if (String.IsNullOrEmpty(getChapters.contentID))
+            //{
+            //    _alert = "contentID is empty!";
+            //}
+            if (String.IsNullOrEmpty(getChapters.chapterName))
+            {
+                _alert = "chapterName is empty!";
+            }
+            else if (String.IsNullOrEmpty(getChapters.subjectId))
+            {
+                _alert = "subjectId is empty!";
+            }
+            else if (String.IsNullOrEmpty(getChapters.classId))
+            {
+                _alert = "classId is empty!";
+            }
+            else
+            {
+                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                SqlConnection con = new SqlConnection(FFMpegCon);
+                string sql = @"INSERT INTO tblChapter 
+                              ([chapterName],[subjectId],[classId],[contentID])      
+                              VALUES(@chapterName,@subjectId,@classId,@contentID)";
+                var insert_result = con.Execute(sql,
+                    new
+                    {
+                        @contentID = getChapters.contentID,
+                        @chapterName = getChapters.chapterName,
+                        @subjectId = getChapters.subjectId,
+                        @classId = getChapters.classId
+                    });
+                _alert = "data saved successfully!";
+                return Request.CreateResponse(HttpStatusCode.Created, new { data = _alert });
+            }
+            return Request.CreateResponse(HttpStatusCode.OK, new { data = _alert });
+        }
+        [HttpPost]
+        public HttpResponseMessage RemoveChapter(GetChapters getChapters)
+        {
+            if (!String.IsNullOrEmpty(getChapters.id))
+            {
+                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                SqlConnection con = new SqlConnection(FFMpegCon);
+                string sql = @"DELETE FROM tblChapter WHERE [id] = @Id;
+                               DBCC CHECKIDENT([tblChapter], RESEED, 0);
+                               DBCC CHECKIDENT([tblChapter]);";
+                var insert_result = con.Execute(sql,
+                    new
+                    {
+                        @Id = getChapters.id
+                    });
+                return Request.CreateResponse(HttpStatusCode.Created, new { data = "data removed successfully" });
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide chapter id" });
+            }
+        }
         [HttpPost]
         public HttpResponseMessage PutChapter(GetChapters getChapters)
         {
@@ -1024,19 +1088,19 @@ namespace FFMPEG_Demo.Controllers
             //{
             //    _alert = "contentID is empty!";
             //}
-            if (!String.IsNullOrEmpty(getChapters.id))
+            if (String.IsNullOrEmpty(getChapters.id))
             {
                 _alert = "ChapterID is empty!";
             }
-            else if (!String.IsNullOrEmpty(getChapters.chapterName))
+            else if (String.IsNullOrEmpty(getChapters.chapterName))
             {
                 _alert = "chapterName is empty!";
             }
-            else if (!String.IsNullOrEmpty(getChapters.subjectId))
+            else if (String.IsNullOrEmpty(getChapters.subjectId))
             {
                 _alert = "subjectId is empty!";
             }
-            else if (!String.IsNullOrEmpty(getChapters.classId))
+            else if (String.IsNullOrEmpty(getChapters.classId))
             {
                 _alert = "classId is empty!";
             }
@@ -1068,9 +1132,8 @@ namespace FFMPEG_Demo.Controllers
             string orderby = getChapterPage.orderby;
             string desc = getChapterPage.desc; // 'true'|'false'
 
-            string contentID = getChapterPage.contentID;
-            string id = getChapterPage.id;
             string chapterName = getChapterPage.chapterName;
+            string contentID = getChapterPage.contentID;
             string subjectId = getChapterPage.subjectId;
             string classId = getChapterPage.classId;
 
@@ -1100,8 +1163,22 @@ namespace FFMPEG_Demo.Controllers
                     _where += " AND";
                 _where += " contentID like '%" + contentID + "%'";
             }
-
-
+            if (subjectId != null)
+            {
+                if (_where == "")
+                    _where = " WHERE";
+                else
+                    _where += " AND";
+                _where += " subjectId = " + subjectId ;
+            }
+            if (classId != null)
+            {
+                if (_where == "")
+                    _where = " WHERE";
+                else
+                    _where += " AND";
+                _where += " classId = " + classId;
+            }
 
             int _limit = 3;
             int _pageindex = 0;
@@ -1120,10 +1197,23 @@ namespace FFMPEG_Demo.Controllers
             int _offset = _pageindex * _limit;
 
             #endregion
-            var obj = new { };
+            string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+            SqlConnection con = new SqlConnection(FFMpegCon);
+            string sql = @"SELECT * FROM [dbo].[tblChapter]" + _where + " order by " + orderby + " " + desc + " OFFSET " + _offset + " rows FETCH NEXT " + _limit + " rows only";
+            List<GetChapters> data = con.Query<GetChapters>(sql).ToList<GetChapters>();
+            string count = con.ExecuteScalar<string>("SELECT count(*) FROM tblChapter" + _where);
+
+            int _count = data.Count();
+            Int32.TryParse(count, out _count);
+            int _totalPage = Convert.ToInt32(_count / _limit);
+            if ((_count % _limit) > 0)
+            {
+                _totalPage += 1;
+            }
+
+            var obj = new { data, pageindex = Convert.ToString(_pageindex), totalPage = Convert.ToString(_totalPage) };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
-
 
         #region IgnoreApi
         [ApiExplorerSettings(IgnoreApi = true)]
