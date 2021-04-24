@@ -14,8 +14,8 @@ namespace FFMPEG_Demo.Models
 
         public string id { get; set; }
         public string chapterName { get; set; }
-        public string subjectId { get; set; }
-        public string classId { get; set; }
+        public string subjectName { get; set; }
+        public string className { get; set; }
         public string contentID { get; set; }
     }
 }

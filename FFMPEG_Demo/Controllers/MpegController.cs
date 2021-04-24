@@ -699,11 +699,21 @@ namespace FFMPEG_Demo.Controllers
             return result;
         }
         [HttpGet]
-        public HttpResponseMessage getContent()
+        public HttpResponseMessage getContent(string _id = null)
         {
             string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
             SqlConnection con = new SqlConnection(FFMpegCon);
-            string sql = @"SELECT * FROM [dbo].[tblContent] order by contentID desc";
+            string sql = @"SELECT con.* FROM [dbo].[tblContent] con
+                        LEFT JOIN [dbo].[tblChapter] ch
+                        ON con.contentID = ch.contentID";
+            if (string.IsNullOrEmpty(_id))
+            {
+                sql += " WHERE ch.contentID is null";
+            }
+            else
+            {
+                sql += " WHERE ch.contentID is null OR ch.contentID = '" + _id + "'";
+            }
             List<GetContents> data = con.Query<GetContents>(sql).ToList<GetContents>();
             var obj = new { data };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
@@ -1134,8 +1144,8 @@ namespace FFMPEG_Demo.Controllers
 
             string chapterName = getChapterPage.chapterName;
             string contentID = getChapterPage.contentID;
-            string subjectId = getChapterPage.subjectId;
-            string classId = getChapterPage.classId;
+            string subjectName = getChapterPage.subjectName;
+            string className = getChapterPage.className;
 
             #region Constant           
             if (orderby == null)
@@ -1153,7 +1163,7 @@ namespace FFMPEG_Demo.Controllers
             string _where = "";
             if (chapterName != null)
             {
-                _where = " WHERE chapterName like '%" + chapterName + "%'";
+                _where = " WHERE chapterName like N'%" + chapterName + "%'";
             }
             if (contentID != null)
             {
@@ -1163,21 +1173,21 @@ namespace FFMPEG_Demo.Controllers
                     _where += " AND";
                 _where += " contentID like '%" + contentID + "%'";
             }
-            if (subjectId != null)
+            if (subjectName != null)
             {
                 if (_where == "")
                     _where = " WHERE";
                 else
                     _where += " AND";
-                _where += " subjectId = " + subjectId ;
+                _where += " sub.subjectName like '%" + subjectName + "%'";
             }
-            if (classId != null)
+            if (className != null)
             {
                 if (_where == "")
                     _where = " WHERE";
                 else
                     _where += " AND";
-                _where += " classId = " + classId;
+                _where += " cls.className = '" + className + "'";
             }
 
             int _limit = 3;
@@ -1199,9 +1209,14 @@ namespace FFMPEG_Demo.Controllers
             #endregion
             string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
             SqlConnection con = new SqlConnection(FFMpegCon);
-            string sql = @"SELECT * FROM [dbo].[tblChapter]" + _where + " order by " + orderby + " " + desc + " OFFSET " + _offset + " rows FETCH NEXT " + _limit + " rows only";
+            string _from = @" FROM [dbo].[tblChapter] ch
+                        LEFT JOIN [dbo].[tblSubject] sub
+                        ON ch.subjectId = sub.id
+                        LEFT JOIN [dbo].[tblClass] cls
+                        ON ch.classId = cls.id";
+            string sql = @"SELECT ch.*, sub.subjectName, cls.className" + _from + _where + " order by " + orderby + " " + desc + " OFFSET " + _offset + " rows FETCH NEXT " + _limit + " rows only";
             List<GetChapters> data = con.Query<GetChapters>(sql).ToList<GetChapters>();
-            string count = con.ExecuteScalar<string>("SELECT count(*) FROM tblChapter" + _where);
+            string count = con.ExecuteScalar<string>("SELECT count(*)" + _from + _where);
 
             int _count = data.Count();
             Int32.TryParse(count, out _count);

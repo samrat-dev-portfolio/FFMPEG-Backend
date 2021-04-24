@@ -12,5 +12,7 @@ namespace FFMPEG_Demo.Models
         public string subjectId { get; set; }
         public string classId { get; set; }
         public string contentID { get; set; }
+        public string subjectName { get; set; }
+        public string className { get; set; }
     }
 }
