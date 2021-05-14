@@ -9,6 +9,7 @@ using System.Configuration;
 //using FFMPEG_Demo.Models;
 //using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Data.SQLite;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
@@ -612,9 +613,17 @@ namespace FFMPEG_Demo.Controllers
         [HttpGet]
         public HttpResponseMessage getClasses()
         {
-            string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-            SqlConnection con = new SqlConnection(FFMpegCon);
-            string sql = @"SELECT * FROM [dbo].[tblClass] order by id";
+            //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+            //SqlConnection con = new SqlConnection(FFMpegCon);
+            #region SQlite database
+            string FFMpegCon = GetSQLiteConnection();
+            if (string.IsNullOrEmpty(FFMpegCon))
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+            }
+            SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+            #endregion
+            string sql = @"SELECT * FROM [tblClass] order by id";
             List<GetClassNames> my_class = con.Query<GetClassNames>(sql).ToList<GetClassNames>();
             var obj = new { data = my_class };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
@@ -969,8 +978,16 @@ namespace FFMPEG_Demo.Controllers
         {
             if (!String.IsNullOrEmpty(setSubject.Name))
             {
-                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                SqlConnection con = new SqlConnection(FFMpegCon);
+                //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                //SqlConnection con = new SqlConnection(FFMpegCon);
+                #region SQlite database
+                string FFMpegCon = GetSQLiteConnection();
+                if (string.IsNullOrEmpty(FFMpegCon))
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                }
+                SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                #endregion
                 string sql = @"INSERT INTO tblClass([className]) VALUES (@className)";
                 var insert_result = con.Execute(sql,
                     new
@@ -989,11 +1006,21 @@ namespace FFMPEG_Demo.Controllers
         {
             if (!String.IsNullOrEmpty(setSubject.Id))
             {
-                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                SqlConnection con = new SqlConnection(FFMpegCon);
+                //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                //SqlConnection con = new SqlConnection(FFMpegCon);
+                #region SQlite database
+                string FFMpegCon = GetSQLiteConnection();
+                if (string.IsNullOrEmpty(FFMpegCon))
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                }
+                SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                #endregion
+                //string sql = @"DELETE FROM tblClass WHERE [id] = @Id;
+                //               DBCC CHECKIDENT([tblClass], RESEED, 0);
+                //               DBCC CHECKIDENT([tblClass]);";
                 string sql = @"DELETE FROM tblClass WHERE [id] = @Id;
-                               DBCC CHECKIDENT([tblClass], RESEED, 0);
-                               DBCC CHECKIDENT([tblClass]);";
+                               delete from SQLITE_SEQUENCE where name ='tblClass'";
                 var insert_result = con.Execute(sql,
                     new
                     {
@@ -1011,8 +1038,16 @@ namespace FFMPEG_Demo.Controllers
         {
             if (!String.IsNullOrEmpty(setSubject.Id) && !String.IsNullOrEmpty(setSubject.Name))
             {
-                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                SqlConnection con = new SqlConnection(FFMpegCon);
+                //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                //SqlConnection con = new SqlConnection(FFMpegCon);
+                #region SQlite database
+                string FFMpegCon = GetSQLiteConnection();
+                if (string.IsNullOrEmpty(FFMpegCon))
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                }
+                SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                #endregion
                 string sql = @"UPDATE tblClass SET [className]=@className WHERE [id] = @Id";
                 var insert_result = con.Execute(sql,
                     new
@@ -1291,6 +1326,18 @@ namespace FFMPEG_Demo.Controllers
             var filePath = HttpContext.Current.Server.MapPath("~/" + base_directory_name + "/");
             return filePath;
         }
+        [NonAction]
+        public string GetSQLiteConnection()
+        {
+            string sqlite_db_name = ConfigurationManager.AppSettings["sqlite_db_name"];
+            var sqlite_db = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_db_name);
+            string conStr = "";
+            if (File.Exists(sqlite_db))
+            {
+                conStr = "Data Source=" + sqlite_db + ";Version=3";
+            }
+            return conStr;
+        }
         #endregion
 
         #endregion
@@ -1299,10 +1346,22 @@ namespace FFMPEG_Demo.Controllers
         [HttpGet]
         public HttpResponseMessage Stest()
         {
-            var obj = new { data = "API With Sqlite" };
+            string FFMpegCon = GetSQLiteConnection();
+            if (string.IsNullOrEmpty(FFMpegCon))
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "no database found!" });
+            }
+            SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+
+            string sql = @"SELECT * FROM [tblClass] order by id;";
+            List<GetClassNames> my_class = con.Query<GetClassNames>(sql).ToList<GetClassNames>();
+            var obj = new
+            {
+                data = "API With Sqlite",
+                my_class
+            };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
         #endregion
-
     }
 }
