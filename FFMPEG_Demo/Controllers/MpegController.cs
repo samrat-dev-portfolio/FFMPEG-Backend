@@ -1295,5 +1295,14 @@ namespace FFMPEG_Demo.Controllers
 
         #endregion
 
+        #region SQlite
+        [HttpGet]
+        public HttpResponseMessage Stest()
+        {
+            var obj = new { data = "API With Sqlite" };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
+        #endregion
+
     }
 }
