@@ -629,9 +629,17 @@ namespace FFMPEG_Demo.Controllers
         [HttpGet]
         public HttpResponseMessage getSubject()
         {
-            string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-            SqlConnection con = new SqlConnection(FFMpegCon);
-            string sql = @"SELECT * FROM [dbo].[tblSubject] order by id";
+            //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+            //SqlConnection con = new SqlConnection(FFMpegCon);
+            #region SQlite database
+            string FFMpegCon = GetSQLiteConnection();
+            if (string.IsNullOrEmpty(FFMpegCon))
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+            }
+            SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+            #endregion
+            string sql = @"SELECT * FROM [tblSubject] order by id";
             List<GetSubjectNames> my_subject = con.Query<GetSubjectNames>(sql).ToList<GetSubjectNames>();
             var obj = new { data = my_subject };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
@@ -708,10 +716,18 @@ namespace FFMPEG_Demo.Controllers
         [HttpGet]
         public HttpResponseMessage getContent(string _id = null)
         {
-            string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-            SqlConnection con = new SqlConnection(FFMpegCon);
-            string sql = @"SELECT con.* FROM [dbo].[tblContent] con
-                        LEFT JOIN [dbo].[tblChapter] ch
+            //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+            //SqlConnection con = new SqlConnection(FFMpegCon);
+            #region SQlite database
+            string FFMpegCon = GetSQLiteConnection();
+            if (string.IsNullOrEmpty(FFMpegCon))
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+            }
+            SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+            #endregion
+            string sql = @"SELECT con.* FROM [tblContent] con
+                        LEFT JOIN [tblChapter] ch
                         ON con.contentID = ch.contentID";
             if (string.IsNullOrEmpty(_id))
             {
@@ -912,8 +928,16 @@ namespace FFMPEG_Demo.Controllers
         {
             if (!String.IsNullOrEmpty(setSubject.Name))
             {
-                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                SqlConnection con = new SqlConnection(FFMpegCon);
+                //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                //SqlConnection con = new SqlConnection(FFMpegCon);
+                #region SQlite database
+                string FFMpegCon = GetSQLiteConnection();
+                if (string.IsNullOrEmpty(FFMpegCon))
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                }
+                SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                #endregion
                 string sql = @"INSERT INTO tblSubject([subjectName]) VALUES (@subjectName)";
                 var insert_result = con.Execute(sql,
                     new
@@ -932,11 +956,21 @@ namespace FFMPEG_Demo.Controllers
         {
             if (!String.IsNullOrEmpty(setSubject.Id))
             {
-                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                SqlConnection con = new SqlConnection(FFMpegCon);
+                //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                //SqlConnection con = new SqlConnection(FFMpegCon);
+                #region SQlite database
+                string FFMpegCon = GetSQLiteConnection();
+                if (string.IsNullOrEmpty(FFMpegCon))
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                }
+                SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                #endregion
+                //string sql = @"DELETE FROM tblSubject WHERE [id] = @Id;
+                //               DBCC CHECKIDENT([tblSubject], RESEED, 0);
+                //               DBCC CHECKIDENT([tblSubject]);";
                 string sql = @"DELETE FROM tblSubject WHERE [id] = @Id;
-                               DBCC CHECKIDENT([tblSubject], RESEED, 0);
-                               DBCC CHECKIDENT([tblSubject]);";
+                               delete from SQLITE_SEQUENCE where name ='tblSubject'";
                 var insert_result = con.Execute(sql,
                     new
                     {
@@ -954,8 +988,16 @@ namespace FFMPEG_Demo.Controllers
         {
             if (!String.IsNullOrEmpty(setSubject.Id) && !String.IsNullOrEmpty(setSubject.Name))
             {
-                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                SqlConnection con = new SqlConnection(FFMpegCon);
+                //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                //SqlConnection con = new SqlConnection(FFMpegCon);
+                #region SQlite database
+                string FFMpegCon = GetSQLiteConnection();
+                if (string.IsNullOrEmpty(FFMpegCon))
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                }
+                SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                #endregion
                 string sql = @"UPDATE tblSubject SET [subjectName]=@subjectName WHERE [id] = @Id";
                 var insert_result = con.Execute(sql,
                     new
@@ -1083,8 +1125,16 @@ namespace FFMPEG_Demo.Controllers
             }
             else
             {
-                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                SqlConnection con = new SqlConnection(FFMpegCon);
+                //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                //SqlConnection con = new SqlConnection(FFMpegCon);
+                #region SQlite database
+                string FFMpegCon = GetSQLiteConnection();
+                if (string.IsNullOrEmpty(FFMpegCon))
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                }
+                SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                #endregion
                 string sql = @"INSERT INTO tblChapter 
                               ([chapterName],[subjectId],[classId],[contentID])      
                               VALUES(@chapterName,@subjectId,@classId,@contentID)";
@@ -1106,11 +1156,21 @@ namespace FFMPEG_Demo.Controllers
         {
             if (!String.IsNullOrEmpty(getChapters.id))
             {
-                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                SqlConnection con = new SqlConnection(FFMpegCon);
+                //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                //SqlConnection con = new SqlConnection(FFMpegCon);
+                #region SQlite database
+                string FFMpegCon = GetSQLiteConnection();
+                if (string.IsNullOrEmpty(FFMpegCon))
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                }
+                SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                #endregion
+                //string sql = @"DELETE FROM tblChapter WHERE [id] = @Id;
+                //               DBCC CHECKIDENT([tblChapter], RESEED, 0);
+                //               DBCC CHECKIDENT([tblChapter]);";      
                 string sql = @"DELETE FROM tblChapter WHERE [id] = @Id;
-                               DBCC CHECKIDENT([tblChapter], RESEED, 0);
-                               DBCC CHECKIDENT([tblChapter]);";
+                               delete from SQLITE_SEQUENCE where name ='tblChapter'";
                 var insert_result = con.Execute(sql,
                     new
                     {
@@ -1149,8 +1209,16 @@ namespace FFMPEG_Demo.Controllers
             }
             else
             {
-                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                SqlConnection con = new SqlConnection(FFMpegCon);
+                //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                //SqlConnection con = new SqlConnection(FFMpegCon);
+                #region SQlite database
+                string FFMpegCon = GetSQLiteConnection();
+                if (string.IsNullOrEmpty(FFMpegCon))
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                }
+                SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                #endregion
                 string sql = @"UPDATE tblChapter SET [contentID]=@contentID,chapterName=@chapterName,subjectId=@subjectId,classId=@classId
                               WHERE [id] = @Id";
                 var insert_result = con.Execute(sql,
@@ -1196,7 +1264,8 @@ namespace FFMPEG_Demo.Controllers
             string _where = "";
             if (chapterName != null)
             {
-                _where = " WHERE chapterName like N'%" + chapterName + "%'";
+                //_where = " WHERE chapterName like N'%" + chapterName + "%'";
+                _where = " WHERE chapterName like '%" + chapterName + "%'";
             }
             if (contentID != null)
             {
@@ -1220,7 +1289,8 @@ namespace FFMPEG_Demo.Controllers
                     _where = " WHERE";
                 else
                     _where += " AND";
-                _where += " cls.className = '" + className + "'";
+                //_where += " cls.className = '" + className + "'";
+                _where += " cls.className = '" + className + "' COLLATE NOCASE";
             }
 
             int _limit = 3;
@@ -1240,14 +1310,28 @@ namespace FFMPEG_Demo.Controllers
             int _offset = _pageindex * _limit;
 
             #endregion
-            string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-            SqlConnection con = new SqlConnection(FFMpegCon);
-            string _from = @" FROM [dbo].[tblChapter] ch
-                        LEFT JOIN [dbo].[tblSubject] sub
+            //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+            //SqlConnection con = new SqlConnection(FFMpegCon);
+            #region SQlite database
+            string FFMpegCon = GetSQLiteConnection();
+            if (string.IsNullOrEmpty(FFMpegCon))
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+            }
+            SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+            #endregion
+            //string _from = @" FROM [dbo].[tblChapter] ch
+            //            LEFT JOIN [dbo].[tblSubject] sub
+            //            ON ch.subjectId = sub.id
+            //            LEFT JOIN [dbo].[tblClass] cls
+            //            ON ch.classId = cls.id";
+            string _from = @" FROM [tblChapter] ch
+                        LEFT JOIN [tblSubject] sub
                         ON ch.subjectId = sub.id
-                        LEFT JOIN [dbo].[tblClass] cls
+                        LEFT JOIN [tblClass] cls
                         ON ch.classId = cls.id";
-            string sql = @"SELECT ch.*, sub.subjectName, cls.className" + _from + _where + " order by " + orderby + " " + desc + " OFFSET " + _offset + " rows FETCH NEXT " + _limit + " rows only";
+            //string sql = @"SELECT ch.*, sub.subjectName, cls.className" + _from + _where + " order by " + orderby + " " + desc + " OFFSET " + _offset + " rows FETCH NEXT " + _limit + " rows only";
+            string sql = @"SELECT ch.*, sub.subjectName, cls.className" + _from + _where + " order by " + orderby + " " + desc + " LIMIT " + _limit + " OFFSET " + _offset;
             List<GetChapters> data = con.Query<GetChapters>(sql).ToList<GetChapters>();
             string count = con.ExecuteScalar<string>("SELECT count(*)" + _from + _where);
 
@@ -1325,7 +1409,7 @@ namespace FFMPEG_Demo.Controllers
 
             string external_content_storage = ConfigurationManager.AppSettings["external_content_storage"];
             string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
-            if("true" == external_content_storage)
+            if ("true" == external_content_storage)
             {
                 filePath = base_content_storage;
             }
@@ -1402,6 +1486,24 @@ namespace FFMPEG_Demo.Controllers
             return conStr;
         }
         [HttpGet]
+        public HttpResponseMessage SQliteHavePassword()
+        {
+            #region HavePass
+            bool HavePass = false;
+            string sqlite_infodb_name = "Info.db";
+            var sqlite_infodb = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_infodb_name);
+            if (File.Exists(sqlite_infodb))
+            {
+                string conStrInfoDB = string.Format("Data Source={0};Version=3;", sqlite_infodb);
+                SQLiteConnection con = new SQLiteConnection(conStrInfoDB);
+                string sql = @"select * from havePass LIMIT 1";
+                string _havePass = con.ExecuteScalar<string>(sql);
+                HavePass = _havePass == "0" ? false : true;
+            }
+            return Request.CreateResponse(HttpStatusCode.OK, new { data = HavePass });
+            #endregion
+        }
+        [HttpGet]
         public HttpResponseMessage SQliteChangePassword(string secret = null, string type = "")
         {
             if (string.IsNullOrEmpty(secret))
@@ -1410,7 +1512,7 @@ namespace FFMPEG_Demo.Controllers
             }
             else if (secret != "change_on_install")
             {
-                return Request.CreateResponse(HttpStatusCode.OK, new { data = "secret in invalid!" });
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "invalid secret!" });
             }
             else if (string.IsNullOrEmpty(type))
             {
