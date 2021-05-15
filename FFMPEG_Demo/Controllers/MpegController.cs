@@ -120,8 +120,16 @@ namespace FFMPEG_Demo.Controllers
             string _alert = null;
             if (Directory.Exists(base_content_storage + id))
             {
-                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                SqlConnection con = new SqlConnection(FFMpegCon);
+                //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                //SqlConnection con = new SqlConnection(FFMpegCon);
+                #region SQlite database
+                string FFMpegCon = GetSQLiteConnection();
+                if (string.IsNullOrEmpty(FFMpegCon))
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                }
+                SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                #endregion
                 OpenKey = con.ExecuteScalar<string>("SELECT OpenKey FROM tblContent WHERE contentID = @contentID", new
                 {
                     @contentID = id
@@ -167,8 +175,12 @@ namespace FFMPEG_Demo.Controllers
         [HttpGet]
         public HttpResponseMessage M3u8info(string id = null)
         {
-            //var path = System.Web.HttpContext.Current.Server.MapPath("~/player_content/" + id);
+            string Scheme = HttpContext.Current.Request.Url.Scheme;
+            string Authority = HttpContext.Current.Request.Url.Authority;
+            string baseurl = string.Format("{0}://{1}/", Scheme, Authority);
             string base_content_storage = GetStoragePath();
+
+            //var path = System.Web.HttpContext.Current.Server.MapPath("~/player_content/" + id);
             //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
             string filename = "index.m3u8";
             var fullpath = Path.Combine(base_content_storage, id, filename);
@@ -179,7 +191,7 @@ namespace FFMPEG_Demo.Controllers
                 {
                     var dataBytes = File.ReadAllBytes(fullpath);
                     var dataStream = new MemoryStream(dataBytes);
-                    dataStream = M3u8DataManipulation(dataStream, id);
+                    dataStream = M3u8DataManipulation(dataStream, id, baseurl);
                     HttpResponseMessage httpResponseMessage = Request.CreateResponse(HttpStatusCode.OK);
                     httpResponseMessage.Content = new StreamContent(dataStream);
                     httpResponseMessage.Content.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("attachment");
@@ -424,17 +436,14 @@ namespace FFMPEG_Demo.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [NonAction]
-        private MemoryStream M3u8DataManipulation(MemoryStream _stream, string id)
+        private MemoryStream M3u8DataManipulation(MemoryStream _stream, string id, string baseurl)
         {
             StreamReader dataReader = new StreamReader(_stream);
             string dataText = dataReader.ReadToEnd();
             // data Manipulation
             //string id = "20210327-181439-b9093c54-0c6e-4ae6-bdac-c70f0e9f7a95";
-            //string base_api_Keyinfo = @"http://localhost:50017/api/mpeg/Keyinfo/";
-            //string base_api_Tsinfo = @"http://localhost:50017/api/mpeg/Tsinfo/";
-
-            string base_api_Keyinfo = ConfigurationManager.AppSettings["base_api_Keyinfo"];
-            string base_api_Tsinfo = ConfigurationManager.AppSettings["base_api_Tsinfo"];
+            string base_api_Keyinfo = string.Format("{0}api/mpeg/Keyinfo/", baseurl); // @"http://localhost:50017/api/mpeg/Keyinfo/";
+            string base_api_Tsinfo = string.Format("{0}api/mpeg/Tsinfo/", baseurl); //@"http://localhost:50017/api/mpeg/Tsinfo/";
 
             string pattern_URI = "URI=\"(.)+\"";  // http://localhost:50017/api/mpeg/Keyinfo/20210327-181439-b9093c54-0c6e-4ae6-bdac-c70f0e9f7a95
             string newURI = "URI=\"" + base_api_Keyinfo + id + "\"";
@@ -540,6 +549,7 @@ namespace FFMPEG_Demo.Controllers
             }
             return ret;
         }
+
         #endregion
 
         #endregion
@@ -650,10 +660,18 @@ namespace FFMPEG_Demo.Controllers
             var objAlert = new { data = "Please Provide Class and Subject Id" };
             if (!string.IsNullOrEmpty(cls) && !string.IsNullOrEmpty(sub))
             {
-                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                SqlConnection con = new SqlConnection(FFMpegCon);
+                //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                //SqlConnection con = new SqlConnection(FFMpegCon);
+                #region SQlite database
+                string FFMpegCon = GetSQLiteConnection();
+                if (string.IsNullOrEmpty(FFMpegCon))
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                }
+                SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                #endregion
                 var parameters = new { cls, sub };
-                string sql = @"SELECT * FROM [dbo].[tblChapter] WHERE classId = @cls AND subjectId = @sub order by id";
+                string sql = @"SELECT * FROM [tblChapter] WHERE classId = @cls AND subjectId = @sub order by id";
                 List<GetChapters> my_chapter = con.Query<GetChapters>(sql, parameters).ToList<GetChapters>();
                 var obj = new { data = my_chapter };
                 return Request.CreateResponse(HttpStatusCode.OK, obj);
@@ -691,8 +709,16 @@ namespace FFMPEG_Demo.Controllers
                 //var filePath = HttpContext.Current.Server.MapPath("~/App_Data/" + postedFile.FileName);
                 var filePath = Path.Combine(base_content_storage, uid, mp4_filename + "." + ext);
                 postedFile.SaveAs(filePath);
-                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                SqlConnection con = new SqlConnection(FFMpegCon);
+                //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                //SqlConnection con = new SqlConnection(FFMpegCon);
+                #region SQlite database
+                string FFMpegCon = GetSQLiteConnection();
+                if (string.IsNullOrEmpty(FFMpegCon))
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                }
+                SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                #endregion
                 string sql = @"INSERT INTO tblContent([contentID],[contentTitle],[contentFileName],[IsConversion])
                 VALUES (@contentID,@contentTitle,@contentFileName,@IsConversion)";
                 var insert_result = con.Execute(sql,
@@ -754,8 +780,16 @@ namespace FFMPEG_Demo.Controllers
                 if (Directory.Exists(path))
                 {
                     //get key from db
-                    string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                    SqlConnection con = new SqlConnection(FFMpegCon);
+                    //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                    //SqlConnection con = new SqlConnection(FFMpegCon);
+                    #region SQlite database
+                    string FFMpegCon = GetSQLiteConnection();
+                    if (string.IsNullOrEmpty(FFMpegCon))
+                    {
+                        return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                    }
+                    SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                    #endregion
                     OpenKey = con.ExecuteScalar<string>("SELECT OpenKey FROM tblContent WHERE contentID = @contentID", new
                     {
                         @contentID = createKeyBody.Id
@@ -800,8 +834,16 @@ namespace FFMPEG_Demo.Controllers
         {
             if (!String.IsNullOrWhiteSpace(createKeyBody.Id))
             {
-                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                SqlConnection con = new SqlConnection(FFMpegCon);
+                //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                //SqlConnection con = new SqlConnection(FFMpegCon);
+                #region SQlite database
+                string FFMpegCon = GetSQLiteConnection();
+                if (string.IsNullOrEmpty(FFMpegCon))
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                }
+                SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                #endregion
                 string sql = @"UPDATE tblContent SET [IsConversion]=@IsConversion WHERE [contentID]=@contentID";
                 var update_result = con.Execute(sql,
                         new
@@ -874,9 +916,18 @@ namespace FFMPEG_Demo.Controllers
             int _offset = _pageindex * _limit;
 
             #endregion
-            string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-            SqlConnection con = new SqlConnection(FFMpegCon);
-            string sql = @"SELECT * FROM [dbo].[tblContent]" + _where + " order by " + orderby + " " + desc + " OFFSET " + _offset + " rows FETCH NEXT " + _limit + " rows only";
+            //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+            //SqlConnection con = new SqlConnection(FFMpegCon);
+            #region SQlite database
+            string FFMpegCon = GetSQLiteConnection();
+            if (string.IsNullOrEmpty(FFMpegCon))
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+            }
+            SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+            #endregion
+            //string sql = @"SELECT * FROM [tblContent]" + _where + " order by " + orderby + " " + desc + " OFFSET " + _offset + " rows FETCH NEXT " + _limit + " rows only";
+            string sql = @"SELECT * FROM [tblContent]" + _where + " order by " + orderby + " " + desc + " LIMIT " + _limit + " OFFSET " + _offset;
             List<GetContents> data = con.Query<GetContents>(sql).ToList<GetContents>();
             string count = con.ExecuteScalar<string>("SELECT count(*) FROM tblContent" + _where);
 
@@ -899,9 +950,18 @@ namespace FFMPEG_Demo.Controllers
                 //string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
                 string base_content_storage = GetStoragePath();
                 string path = base_content_storage + createKeyBody.Id;
-                string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                SqlConnection con = new SqlConnection(FFMpegCon);
-                string sql = @"DELETE FROM tblContent WHERE [contentID]=@contentID";
+                //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                //SqlConnection con = new SqlConnection(FFMpegCon);
+                #region SQlite database
+                string FFMpegCon = GetSQLiteConnection();
+                if (string.IsNullOrEmpty(FFMpegCon))
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                }
+                SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                #endregion
+                string sql = @"DELETE FROM tblContent WHERE [contentID]=@contentID;
+                             UPDATE tblChapter SET [contentID]=null WHERE [contentID]=@contentID";
                 var delete_result = con.Execute(sql,
                     new
                     {
@@ -1361,8 +1421,12 @@ namespace FFMPEG_Demo.Controllers
                 {
                     var dataBytes = File.ReadAllBytes(fullpath);
                     string OpenKey = Encoding.Default.GetString(dataBytes);
-                    string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-                    SqlConnection con = new SqlConnection(FFMpegCon);
+                    //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+                    //SqlConnection con = new SqlConnection(FFMpegCon);
+                    #region SQlite database
+                    string FFMpegCon = GetSQLiteConnection();
+                    SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                    #endregion
                     string sql = @"UPDATE tblContent SET [IsConversion]=@IsConversion,[OpenKey]=@OpenKey
                            WHERE [contentID]=@contentID";
                     var update_result = con.Execute(sql,
@@ -1378,8 +1442,16 @@ namespace FFMPEG_Demo.Controllers
         [NonAction]
         private void DeleteRawMp4(CreateKeyBody createKeyBody)
         {
-            string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-            SqlConnection con = new SqlConnection(FFMpegCon);
+            //string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
+            //SqlConnection con = new SqlConnection(FFMpegCon);
+            #region SQlite database
+            string FFMpegCon = GetSQLiteConnection();
+            //if (string.IsNullOrEmpty(FFMpegCon))
+            //{
+            //    return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+            //}
+            SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+            #endregion
             string sql = @"SELECT * FROM tblContent WHERE [contentID]=@contentID";
             List<GetContents> data = con.Query<GetContents>(sql,
                     new
