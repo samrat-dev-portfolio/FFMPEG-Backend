@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;
-//using FFMPEG_Demo.Models;
-//using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Data.SQLite;
 using System.Diagnostics;
@@ -1324,35 +1322,150 @@ namespace FFMPEG_Demo.Controllers
         {
             string base_directory_name = ConfigurationManager.AppSettings["base_content_storage_project_root_directory_name"];
             var filePath = HttpContext.Current.Server.MapPath("~/" + base_directory_name + "/");
-            return filePath;
-        }
-        [NonAction]
-        public string GetSQLiteConnection()
-        {
-            string sqlite_db_name = ConfigurationManager.AppSettings["sqlite_db_name"];
-            var sqlite_db = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_db_name);
-            string conStr = "";
-            if (File.Exists(sqlite_db))
+
+            string external_content_storage = ConfigurationManager.AppSettings["external_content_storage"];
+            string base_content_storage = ConfigurationManager.AppSettings["base_content_storage"];
+            if("true" == external_content_storage)
             {
-                conStr = "Data Source=" + sqlite_db + ";Version=3";
+                filePath = base_content_storage;
             }
-            return conStr;
+
+            return filePath;
         }
         #endregion
 
         #endregion
 
         #region SQlite
+        [NonAction]
+        public string GetSQLiteConnection()
+        {
+            string _password = "sqlite_A1d4m1N";
+            #region HavePass
+            bool HavePass = false;
+            string sqlite_infodb_name = "Info.db";
+            var sqlite_infodb = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_infodb_name);
+            string conStr = "";
+            if (File.Exists(sqlite_infodb))
+            {
+                string conStrInfoDB = string.Format("Data Source={0};Version=3;", sqlite_infodb);
+                SQLiteConnection con = new SQLiteConnection(conStrInfoDB);
+                string sql = @"select * from havePass LIMIT 1";
+                string _havePass = con.ExecuteScalar<string>(sql);
+                HavePass = _havePass == "0" ? false : true;
+            }
+            #endregion
+
+            string sqlite_db_name = ConfigurationManager.AppSettings["sqlite_db_name"];
+            var sqlite_db = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_db_name);
+            if (File.Exists(sqlite_db))
+            {
+                conStr = string.Format("Data Source={0};Version=3;", sqlite_db);
+                if (HavePass)
+                {
+                    conStr = string.Format("Data Source={0};Version=3;Password={1};", sqlite_db, _password);
+                }
+            }
+            return conStr;
+        }
+        [NonAction]
+        public void UpdateHavePassword(int havePass)
+        {
+            string sqlite_infodb_name = "Info.db";
+            var sqlite_infodb = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_infodb_name);
+            if (File.Exists(sqlite_infodb))
+            {
+                string conStrInfoDB = string.Format("Data Source={0};Version=3;", sqlite_infodb);
+                SQLiteConnection conInfo = new SQLiteConnection(conStrInfoDB);
+                string sql = @"UPDATE havePass SET havePass = @havePass;";
+                var insert_result = conInfo.Execute(sql,
+                    new
+                    {
+                        @havePass = havePass
+                    });
+            }
+        }
+        [NonAction]
+        public string GetSQLiteConnectionChangePassword(string _password = "")
+        {
+            string sqlite_db_name = ConfigurationManager.AppSettings["sqlite_db_name"];
+            var sqlite_db = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_db_name);
+            string conStr = "";
+            if (File.Exists(sqlite_db))
+            {
+                conStr = string.Format("Data Source={0};Version=3;", sqlite_db);
+                if (!string.IsNullOrEmpty(_password))
+                {
+                    conStr = string.Format("Data Source={0};Version=3;Password={1};", sqlite_db, _password);
+                }
+            }
+            return conStr;
+        }
+        [HttpGet]
+        public HttpResponseMessage SQliteChangePassword(string secret = null, string type = "")
+        {
+            if (string.IsNullOrEmpty(secret))
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "no secret found!" });
+            }
+            else if (secret != "change_on_install")
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "secret in invalid!" });
+            }
+            else if (string.IsNullOrEmpty(type))
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "enter type add or remove" });
+            }
+            else
+            {
+                try
+                {
+                    string _password = "sqlite_A1d4m1N";
+                    if (type == "add")
+                    {
+                        string FFMpegCon = GetSQLiteConnectionChangePassword();
+                        if (string.IsNullOrEmpty(FFMpegCon))
+                        {
+                            return Request.CreateResponse(HttpStatusCode.OK, new { data = "no database found!" });
+                        }
+                        SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                        con.Open();
+                        con.ChangePassword(_password);
+                        con.Close();
+                        UpdateHavePassword(1);
+                        return Request.CreateResponse(HttpStatusCode.OK, new { data = "password added to database!" });
+                    }
+                    else if (type == "remove")
+                    {
+                        string FFMpegCon = GetSQLiteConnectionChangePassword(_password);
+                        if (string.IsNullOrEmpty(FFMpegCon))
+                        {
+                            return Request.CreateResponse(HttpStatusCode.OK, new { data = "no database found!" });
+                        }
+                        SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                        con.Open();
+                        con.ChangePassword(String.Empty);
+                        con.Close();
+                        UpdateHavePassword(0);
+                        return Request.CreateResponse(HttpStatusCode.OK, new { data = "password removed from database!" });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return Request.CreateResponse(HttpStatusCode.OK, new { data = ex.ToString() });
+                }
+            }
+            return Request.CreateResponse(HttpStatusCode.NotFound);
+        }
         [HttpGet]
         public HttpResponseMessage Stest()
         {
             string FFMpegCon = GetSQLiteConnection();
             if (string.IsNullOrEmpty(FFMpegCon))
             {
-                return Request.CreateResponse(HttpStatusCode.OK, new { data = "no database found!" });
+                return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
             }
             SQLiteConnection con = new SQLiteConnection(FFMpegCon);
-
             string sql = @"SELECT * FROM [tblClass] order by id;";
             List<GetClassNames> my_class = con.Query<GetClassNames>(sql).ToList<GetClassNames>();
             var obj = new
