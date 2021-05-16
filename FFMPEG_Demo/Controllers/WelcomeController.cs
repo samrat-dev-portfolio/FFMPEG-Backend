@@ -23,29 +23,5 @@ namespace FFMPEG_Demo.Controllers
         {
             return View();
         }
-
-        public ActionResult Proceed(string my_class = null)
-        {
-            getClass();
-            return View();
-        }
-
-        private void getClass()
-        {
-            string FFMpegCon = ConfigurationManager.ConnectionStrings["FFMpeg"].ConnectionString;
-            SqlConnection con = new SqlConnection(FFMpegCon);
-            string sql = @"SELECT * FROM [dbo].[tblClass]";
-            List<GetClassNames> my_class = con.Query<GetClassNames>(sql).ToList<GetClassNames>();
-            ViewData["my_class"] = my_class;
-
-            //string sql = @"INSERT INTO tblPDFstore([filename],[filedata])
-            //VALUES (@filename,@filedata); SELECT CAST(SCOPE_IDENTITY() as int); ";
-            //var id = con.Query<int>(sql,
-            //    new
-            //    {
-            //        @filename = safeFileName,
-            //        @filedata = json,
-            //    }).Single();
-        }
     }
 }
