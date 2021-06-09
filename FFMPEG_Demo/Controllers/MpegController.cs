@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;
-using System.Data.SqlClient;
 using System.Data.SQLite;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
@@ -14,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -554,67 +554,98 @@ namespace FFMPEG_Demo.Controllers
 
         #endregion
 
-        #region Testing of JWT
+        #region Auth-JWT
         [HttpGet]
-        public HttpResponseMessage test(string x = null, string y = null)
+        public HttpResponseMessage AuthGetToken()
         {
-            var obj = new { alert = "test", x, y };
-            return Request.CreateResponse(HttpStatusCode.OK, obj);
-        }
-        [HttpGet]
-        public HttpResponseMessage test_token(string x = null, string y = null)
-        {
-            string key = "my_secret_key_12345";
             var issuer = "ffmpeg.demo.com";
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var permClaims = new List<Claim>();
             permClaims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
-            permClaims.Add(new Claim("valid", "1"));
-            permClaims.Add(new Claim("userid", "21"));
-            permClaims.Add(new Claim("username", "samrat"));
+            permClaims.Add(new Claim("username", "samratg850"));
             permClaims.Add(new Claim("role", "admin"));
+
+            int expireMinutes = 10; // DateTime.Now.AddDays(1)
+
+            string Secret = "db3OIsj+BXE9NZDy0t8W3TcNekrF+2d/1sFnWG4HnV8TZY30iTOdtVWJG8abWvB1GlOgJuQZdcF2Luqm/hccMw==";
+            var symmetricKey = Convert.FromBase64String(Secret);
+            var symmetricSecurityKey = new SymmetricSecurityKey(symmetricKey);
+            var credentials = new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(issuer,
                             issuer,
                             permClaims,
-                            expires: DateTime.Now.AddDays(1),
+                            expires: DateTime.Now.AddMinutes(expireMinutes),
                             signingCredentials: credentials);
             var jwt_token = new JwtSecurityTokenHandler().WriteToken(token);
-            var obj = new { alert = "test_token", token = jwt_token };
+            var obj = new { alert = "AuthGetToken", token = jwt_token };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
-        [HttpGet]
-        public HttpResponseMessage test_isauth_jwt(string token = null)
-        {
-            var obj = new { alert = "test_isauth" };
-            return Request.CreateResponse(HttpStatusCode.OK, obj);
-        }
-        [HttpGet]
-        public HttpResponseMessage test_isauth(string token = null)
-        {
-            var handler = new JwtSecurityTokenHandler();
-            var my_token = handler.ReadJwtToken(token);
-            JwtPayload payloads = my_token.Payload;
-            string iss = null;
-            string valid = null;
-            string userid = null;
-            string username = null;
-            string role = null;
 
-            foreach (Claim c in payloads.Claims)
+        [HttpPost]
+        public HttpResponseMessage AuthValidateToken()
+        {
+            try
             {
-                if ("valid" == c.Type) valid = c.Value;
-                else if ("userid" == c.Type) userid = c.Value;
-                else if ("username" == c.Type) username = c.Value;
-                else if ("role" == c.Type) role = c.Value;
-                else if ("iss" == c.Type) iss = c.Value;
-            }
+                HttpRequestHeaders headers = this.Request.Headers;
+                string token = string.Empty;
+                if (headers.Contains("token"))
+                {
+                    token = headers.GetValues("token").First();
+                }
 
-            var obj = new { alert = "test_isauth", iss, valid, userid, username, role };
-            return Request.CreateResponse(HttpStatusCode.OK, obj);
+                string iss = null;
+                string username = null;
+                string role = null;
+                if (!string.IsNullOrEmpty(token))
+                {
+                    string Secret = "db3OIsj+BXE9NZDy0t8W3TcNekrF+2d/1sFnWG4HnV8TZY30iTOdtVWJG8abWvB1GlOgJuQZdcF2Luqm/hccMw==";
+                    var handler = new JwtSecurityTokenHandler();
+                    var jwtToken = handler.ReadToken(token) as JwtSecurityToken;
+                    if (jwtToken != null)
+                    {
+                        var symmetricKey = Convert.FromBase64String(Secret);
+                        var validationParameters = new TokenValidationParameters()
+                        {
+                            RequireExpirationTime = true,
+                            ValidateIssuer = false,
+                            ValidateAudience = false,
+                            IssuerSigningKey = new SymmetricSecurityKey(symmetricKey),
+                            ClockSkew = TimeSpan.Zero
+                        };
+                        SecurityToken securityToken;
+                        var principal = handler.ValidateToken(token, validationParameters, out securityToken);
+                        if (securityToken != null)
+                        {
+                            username = ((JwtSecurityToken)securityToken).Payload["username"].ToString();
+                            role = ((JwtSecurityToken)securityToken).Payload["role"].ToString();
+                            iss = ((JwtSecurityToken)securityToken).Payload["iss"].ToString();
+                        }
+                        return Request.CreateResponse(HttpStatusCode.OK, new { username, role, iss });
+                    }
+                }
+                return Request.CreateResponse(HttpStatusCode.OK, new { alert = "Token Not Found" });
+            }
+            catch (Exception ex)
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { alert = TokenException(ex.ToString()), error = ex.ToString() });
+            }
         }
+
+        [NonAction]
+        private string TokenException(string error)
+        {
+            string ret = "Invalid token!";
+            string pattern = @"(Unable to decode the header)|(Unable to decode the payload)|(Signature validation failed)|(The token is expired)";
+            RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.Multiline;
+            MatchCollection match = Regex.Matches(error, pattern, options);
+            if (match.Count > 0)
+            {
+                ret = match[0].Value.ToString().Trim() + "!";
+            }
+            return ret;
+        }
+
         #endregion
 
         #region UI
