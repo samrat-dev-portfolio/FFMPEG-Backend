@@ -2,6 +2,7 @@
 using FFMPEG_Demo.Models;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using SKGL;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -1679,6 +1680,29 @@ namespace FFMPEG_Demo.Controllers
                 my_class
             };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
+        #endregion
+
+        #region License 
+        [HttpGet]
+        public HttpResponseMessage LicenseGenerateKey()
+        {
+            Generate generate = new Generate();
+            string PasswordTxt = "my_secreate_phase";
+            generate.secretPhase = PasswordTxt;
+            string DayTxt = "30";
+            string SerialTxt = generate.doKey(Convert.ToInt32(DayTxt));
+
+            Validate validate = new Validate();
+            validate.secretPhase = PasswordTxt;
+            validate.Key = SerialTxt;
+            string StatusTxt = "Creation Date: " + validate.CreationDate + ", " +
+                "Expire Date: " + validate.ExpireDate + ", " +
+                "Day Left: " + validate.DaysLeft;
+
+            var obj = new { alert = "LicenseGenerateKey", data = new { PasswordTxt, DayTxt, SerialTxt, StatusTxt } };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+            // https://www.youtube.com/playlist?list=PLsLeUGNmwEPzMUJcfy_7TfVsxu6j9GVaZ
         }
         #endregion
     }

@@ -72,6 +72,9 @@
     <Reference Include="Microsoft.Win32.Registry, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Win32.Registry.4.5.0\lib\net461\Microsoft.Win32.Registry.dll</HintPath>
     </Reference>
+    <Reference Include="SKGL, Version=2.0.4.1, Culture=neutral, PublicKeyToken=6506df92444891d9, processorArchitecture=MSIL">
+      <HintPath>..\packages\SoftwareProtector.1.0.5.1\lib\SKGL.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Buffers.4.4.0\lib\netstandard2.0\System.Buffers.dll</HintPath>
@@ -248,6 +251,7 @@
     <Content Include="favicon.ico" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Global.asax" />
+    <Content Include="LINCENSE.txt" />
     <Content Include="note\dev_resouece.txt" />
     <Content Include="Scripts\axios.js" />
     <Content Include="Scripts\axios.min.js" />
@@ -281,6 +285,7 @@
     <Content Include="Content\bootstrap-reboot.css.map" />
     <Content Include="Content\bootstrap-grid.min.css.map" />
     <Content Include="Content\bootstrap-grid.css.map" />
+    <Content Include="Software Protector.exe" />
     <Content Include="static\css\2.35c34c7b.chunk.css" />
     <Content Include="static\css\main.1c3221a9.chunk.css" />
     <Content Include="static\js\2.55d30bf4.chunk.js" />
