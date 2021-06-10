@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using FFMPEG_Demo.Filter;
 using FFMPEG_Demo.Models;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
@@ -556,6 +557,8 @@ namespace FFMPEG_Demo.Controllers
         #endregion
 
         #region Auth-JWT
+        private enum UserDataType { UserName, UserRole };
+
         [HttpGet]
         public HttpResponseMessage AuthGetToken()
         {
@@ -563,10 +566,10 @@ namespace FFMPEG_Demo.Controllers
 
             var permClaims = new List<Claim>();
             permClaims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
-            permClaims.Add(new Claim("username", "samratg850"));
-            permClaims.Add(new Claim("role", "admin"));
+            permClaims.Add(new Claim(UserDataType.UserRole.ToString(), "admin"));
+            permClaims.Add(new Claim(UserDataType.UserName.ToString(), "samratg850"));
 
-            int expireMinutes = 10; // DateTime.Now.AddDays(1)
+            int expireMinutes = 60; // DateTime.Now.AddDays(1)
 
             string Secret = "db3OIsj+BXE9NZDy0t8W3TcNekrF+2d/1sFnWG4HnV8TZY30iTOdtVWJG8abWvB1GlOgJuQZdcF2Luqm/hccMw==";
             var symmetricKey = Convert.FromBase64String(Secret);
@@ -586,6 +589,7 @@ namespace FFMPEG_Demo.Controllers
         [HttpPost]
         public HttpResponseMessage AuthValidateToken()
         {
+            bool canRead = true;
             try
             {
                 HttpRequestHeaders headers = this.Request.Headers;
@@ -602,6 +606,7 @@ namespace FFMPEG_Demo.Controllers
                 {
                     string Secret = "db3OIsj+BXE9NZDy0t8W3TcNekrF+2d/1sFnWG4HnV8TZY30iTOdtVWJG8abWvB1GlOgJuQZdcF2Luqm/hccMw==";
                     var handler = new JwtSecurityTokenHandler();
+                    canRead = handler.CanReadToken(token);
                     var jwtToken = handler.ReadToken(token) as JwtSecurityToken;
                     if (jwtToken != null)
                     {
@@ -629,8 +634,20 @@ namespace FFMPEG_Demo.Controllers
             }
             catch (Exception ex)
             {
-                return Request.CreateResponse(HttpStatusCode.OK, new { alert = TokenException(ex.ToString()), error = ex.ToString() });
+                return Request.CreateResponse(HttpStatusCode.OK, new { canRead, alert = TokenException(ex.ToString()), error = ex.ToString() });
             }
+        }
+
+        [SAuth(UserRole = "admin")]
+        [HttpGet]
+        public HttpResponseMessage AdminData()
+        {
+            ClaimsPrincipal claimsPrincipal = (ClaimsPrincipal)HttpContext.Current.User;
+            string UserName = TokenUserData(claimsPrincipal, UserDataType.UserName);
+            string UserRole = TokenUserData(claimsPrincipal, UserDataType.UserRole);
+
+            var obj = new { alert = "AdminData", UserName, UserRole };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
 
         [NonAction]
@@ -647,6 +664,18 @@ namespace FFMPEG_Demo.Controllers
             return ret;
         }
 
+        [NonAction]
+        private string TokenUserData(ClaimsPrincipal claimsPrincipal, UserDataType userDataType)
+        {
+            string ret = null;
+            if (claimsPrincipal != null)
+            {
+                var claims = claimsPrincipal.Claims.ToList();
+                var userData = claims.Where(c => c.Type == userDataType.ToString())?.Select(c => c.Value).ToArray();
+                ret = userData.Count() > 0 ? userData[0] : null;
+            }
+            return ret;
+        }
         #endregion
 
         #region UI

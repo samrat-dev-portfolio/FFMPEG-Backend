@@ -224,6 +224,7 @@
     <Compile Include="Controllers\MpegController.cs" />
     <Compile Include="Controllers\ValuesController.cs" />
     <Compile Include="Controllers\WelcomeController.cs" />
+    <Compile Include="Filter\SAuth.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
