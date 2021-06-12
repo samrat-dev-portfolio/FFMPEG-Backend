@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using DeviceId;
 using FFMPEG_Demo.Filter;
 using FFMPEG_Demo.Models;
 using Microsoft.IdentityModel.Tokens;
@@ -1753,6 +1754,29 @@ namespace FFMPEG_Demo.Controllers
             return Request.CreateResponse(HttpStatusCode.OK, obj);
             // https://www.youtube.com/playlist?list=PLsLeUGNmwEPzMUJcfy_7TfVsxu6j9GVaZ
         }
+
+        [HttpGet]
+        public HttpResponseMessage DeviceInfo()
+        {
+            string MachineName = System.Net.Dns.GetHostName();
+            string OSVersion = System.Environment.OSVersion.VersionString;
+
+            string deviceId = new DeviceIdBuilder()
+            .AddMachineName()
+            .AddMacAddress()
+            .AddProcessorId()
+            .AddMotherboardSerialNumber()
+            .ToString();
+            var obj = new
+            {
+                alert = "DeviceInfo",
+                deviceId,
+                MachineName,
+                OSVersion
+            };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
+
         #endregion
     }
 }
