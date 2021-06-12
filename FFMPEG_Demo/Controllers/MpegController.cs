@@ -559,37 +559,58 @@ namespace FFMPEG_Demo.Controllers
         #region Auth-JWT
         private enum UserDataType { UserName, UserRole };
 
-        [HttpGet]
-        public HttpResponseMessage AuthGetToken()
+        private string JwtAuthSecret()
         {
-            var issuer = "ffmpeg.demo.com";
+            string _Secret = "smartstudy.ffmpeg.com.samrat.ghosh.nWG4HnV8TZY30iTOdtVWJG8abWvB";
+            var _SecretBytes = System.Text.Encoding.UTF8.GetBytes(_Secret);
+            string Secret = Convert.ToBase64String(_SecretBytes);
+            return Secret;
+        }
 
+        private string JwtAuthIssuer()
+        {
+            return "smartstudy.ffmpeg.com";
+        }
+
+        [HttpPost]
+        public HttpResponseMessage AuthGetToken(AuthGetToken authGetToken)
+        {
+            if (authGetToken == null || String.IsNullOrWhiteSpace(authGetToken.Username) || String.IsNullOrWhiteSpace(authGetToken.Password))
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide username and password!" });
+            }
+
+            string _issuer = JwtAuthIssuer();
             var permClaims = new List<Claim>();
             permClaims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
             permClaims.Add(new Claim(UserDataType.UserRole.ToString(), "admin"));
             permClaims.Add(new Claim(UserDataType.UserName.ToString(), "samratg850"));
 
-            int expireMinutes = 60; // DateTime.Now.AddDays(1)
+            int expireMinutes = 10; // DateTime.Now.AddDays(1)
 
-            string Secret = "db3OIsj+BXE9NZDy0t8W3TcNekrF+2d/1sFnWG4HnV8TZY30iTOdtVWJG8abWvB1GlOgJuQZdcF2Luqm/hccMw==";
+            string Secret = JwtAuthSecret();
             var symmetricKey = Convert.FromBase64String(Secret);
             var symmetricSecurityKey = new SymmetricSecurityKey(symmetricKey);
             var credentials = new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256);
 
-            var token = new JwtSecurityToken(issuer,
-                            issuer,
+            var token = new JwtSecurityToken(_issuer,
+                            _issuer,
                             permClaims,
+                            notBefore: DateTime.Now,
                             expires: DateTime.Now.AddMinutes(expireMinutes),
                             signingCredentials: credentials);
+
+            string validFrom = token.ValidFrom.ToString();
+            string validTo = token.ValidTo.ToString();
+            string kind = token.ValidTo.Kind.ToString();
+            string issuer = token.Issuer;
             var jwt_token = new JwtSecurityTokenHandler().WriteToken(token);
-            var obj = new { alert = "AuthGetToken", token = jwt_token };
-            return Request.CreateResponse(HttpStatusCode.OK, obj);
+            return Request.CreateResponse(HttpStatusCode.OK, new { token = jwt_token, issuer, validFrom, validTo, kind });
         }
 
         [HttpPost]
         public HttpResponseMessage AuthValidateToken()
         {
-            bool canRead = true;
             try
             {
                 HttpRequestHeaders headers = this.Request.Headers;
@@ -599,14 +620,13 @@ namespace FFMPEG_Demo.Controllers
                     token = headers.GetValues("token").First();
                 }
 
-                string iss = null;
-                string username = null;
-                string role = null;
+                //string iss = null;
+                //string username = null;
+                //string role = null;
                 if (!string.IsNullOrEmpty(token))
                 {
-                    string Secret = "db3OIsj+BXE9NZDy0t8W3TcNekrF+2d/1sFnWG4HnV8TZY30iTOdtVWJG8abWvB1GlOgJuQZdcF2Luqm/hccMw==";
+                    string Secret = JwtAuthSecret();
                     var handler = new JwtSecurityTokenHandler();
-                    canRead = handler.CanReadToken(token);
                     var jwtToken = handler.ReadToken(token) as JwtSecurityToken;
                     if (jwtToken != null)
                     {
@@ -623,23 +643,23 @@ namespace FFMPEG_Demo.Controllers
                         var principal = handler.ValidateToken(token, validationParameters, out securityToken);
                         if (securityToken != null)
                         {
-                            username = ((JwtSecurityToken)securityToken).Payload["username"].ToString();
-                            role = ((JwtSecurityToken)securityToken).Payload["role"].ToString();
-                            iss = ((JwtSecurityToken)securityToken).Payload["iss"].ToString();
+                            //username = ((JwtSecurityToken)securityToken).Payload["username"].ToString();
+                            //role = ((JwtSecurityToken)securityToken).Payload["role"].ToString();
+                            //iss = ((JwtSecurityToken)securityToken).Payload["iss"].ToString();
                         }
-                        return Request.CreateResponse(HttpStatusCode.OK, new { username, role, iss });
+                        return Request.CreateResponse(HttpStatusCode.OK, new { alert = "AuthValidateToken" });
                     }
                 }
                 return Request.CreateResponse(HttpStatusCode.OK, new { alert = "Token Not Found" });
             }
             catch (Exception ex)
             {
-                return Request.CreateResponse(HttpStatusCode.OK, new { canRead, alert = TokenException(ex.ToString()), error = ex.ToString() });
+                return Request.CreateResponse(HttpStatusCode.OK, new { alert = TokenException(ex.ToString()), error = ex.ToString() });
             }
         }
 
         [SAuth(UserRole = "admin")]
-        [HttpGet]
+        [HttpPost]
         public HttpResponseMessage AdminData()
         {
             ClaimsPrincipal claimsPrincipal = (ClaimsPrincipal)HttpContext.Current.User;

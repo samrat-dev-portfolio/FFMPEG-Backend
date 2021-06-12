@@ -31,7 +31,8 @@ namespace FFMPEG_Demo
             var response = await base.SendAsync(request, cancellationToken);
             if(request.Method == HttpMethod.Options && response.StatusCode == HttpStatusCode.MethodNotAllowed)
             {
-                response.Headers.Add("Access-Control-Allow-Header", "accept,content-type,origin,x-my-header");
+                response.Headers.Add("Access-Control-Allow-Header", "*");
+                //response.Headers.Add("Access-Control-Allow-Header", "accept,content-type,origin,x-my-header");
                 //response.Headers.Add("Access-Control-Allow-Origin", "*");
                 response = new HttpResponseMessage(HttpStatusCode.OK);
             }

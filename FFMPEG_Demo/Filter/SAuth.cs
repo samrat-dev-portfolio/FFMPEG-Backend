@@ -17,10 +17,15 @@ namespace FFMPEG_Demo.Filter
     public class SAuth : ActionFilterAttribute, IAuthenticationFilter
     {
         private string TokenExceptionError { get; set; }
-        private bool allowMultiple = false;
         public String UserRole { get; set; }
-
         private enum UserDataType { UserName, UserRole };
+        private string JwtAuthSecret()
+        {
+            string _Secret = "smartstudy.ffmpeg.com.samrat.ghosh.nWG4HnV8TZY30iTOdtVWJG8abWvB";
+            var _SecretBytes = System.Text.Encoding.UTF8.GetBytes(_Secret);
+            string Secret = Convert.ToBase64String(_SecretBytes);
+            return Secret;
+        }
         public async Task AuthenticateAsync(HttpAuthenticationContext context, CancellationToken cancellationToken)
         {
             // excute 1st 
@@ -95,7 +100,7 @@ namespace FFMPEG_Demo.Filter
             ClaimsPrincipal principal = null;
             if (!string.IsNullOrEmpty(token))
             {
-                string Secret = "db3OIsj+BXE9NZDy0t8W3TcNekrF+2d/1sFnWG4HnV8TZY30iTOdtVWJG8abWvB1GlOgJuQZdcF2Luqm/hccMw==";
+                string Secret = JwtAuthSecret();
                 try
                 {
                     var handler = new JwtSecurityTokenHandler();
