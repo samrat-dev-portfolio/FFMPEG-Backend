@@ -1878,6 +1878,42 @@ namespace FFMPEG_Demo.Controllers
             };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
+        [HttpPost]
+        public HttpResponseMessage AddLicenseKeyGen(LicenseGenerateKey data)
+        {
+            if (data == null || (string.IsNullOrWhiteSpace(data.LicenceAppId) || string.IsNullOrWhiteSpace(data.LicenceKey)))
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide LicenceAppId and LicenceKey!" });
+            }
+            else
+            {
+                try
+                {
+                    #region SQlite database
+                    string FFMpegCon = GetSQLiteAuthConnection();
+                    if (string.IsNullOrEmpty(FFMpegCon))
+                    {
+                        return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                    }
+                    SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                    #endregion
+                    string sql = @"INSERT INTO tblKeygen 
+                              ([appId],[serialKey])      
+                              VALUES(@appId,@serialKey)";
+                    var insert_result = con.Execute(sql,
+                        new
+                        {
+                            @appId = data.LicenceAppId,
+                            @serialKey = data.LicenceKey,
+                        });
+                }
+                catch (Exception ex)
+                {
+                    return Request.CreateResponse(HttpStatusCode.OK, new { error = "Keygen Save error!" });
+                }
+                return Request.CreateResponse(HttpStatusCode.Created, new { data = "data saved successfully!" });
+            }
+        }
 
         [NonAction]
         public string AppID()
