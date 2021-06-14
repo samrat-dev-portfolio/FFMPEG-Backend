@@ -1489,6 +1489,53 @@ namespace FFMPEG_Demo.Controllers
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
 
+        [HttpGet]
+        public HttpResponseMessage GetRemoteUrl()
+        {
+            #region SQlite database
+            string FFMpegCon = GetSQLiteConnection();
+            if (string.IsNullOrEmpty(FFMpegCon))
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+            }
+            SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+            #endregion
+            string sql = @"SELECT * FROM [tblRemoteUrl] limit 1";
+            List<GetRemoteUrl> data = con.Query<GetRemoteUrl>(sql).ToList<GetRemoteUrl>();
+            return Request.CreateResponse(HttpStatusCode.OK, new { data });
+        }
+        [HttpPost]
+        public HttpResponseMessage SetRemoteUrl(GetRemoteUrl getRemoteUrl)
+        {
+            if (getRemoteUrl == null || string.IsNullOrWhiteSpace(getRemoteUrl.url))
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "please provide url!" });
+            }
+            else if (string.IsNullOrEmpty(getRemoteUrl.secret))
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "no secret found!" });
+            }
+            else if (getRemoteUrl.secret != "change_on_install")
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "invalid secret!" });
+            }
+            #region SQlite database
+            string FFMpegCon = GetSQLiteConnection();
+            if (string.IsNullOrEmpty(FFMpegCon))
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+            }
+            SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+            #endregion
+            string sql = @"UPDATE tblRemoteUrl SET [url]=@url";
+            var insert_result = con.Execute(sql,
+                new
+                {
+                    @url = getRemoteUrl.url
+                });
+            return Request.CreateResponse(HttpStatusCode.Created, new { data = "data saved successfully" });
+        }
+
         #region IgnoreApi
         [ApiExplorerSettings(IgnoreApi = true)]
         [NonAction]
@@ -1576,7 +1623,12 @@ namespace FFMPEG_Demo.Controllers
 
         #region SQlite
         [NonAction]
-        public string GetSQLiteConnection()
+        public string GetSQLiteAuthConnection()
+        {
+            return GetSQLiteConnection("auth");
+        }
+        [NonAction]
+        public string GetSQLiteConnection(string type = null)
         {
             string _password = "sqlite_A1d4m1N";
             #region HavePass
@@ -1593,8 +1645,8 @@ namespace FFMPEG_Demo.Controllers
                 HavePass = _havePass == "0" ? false : true;
             }
             #endregion
-
             string sqlite_db_name = ConfigurationManager.AppSettings["sqlite_db_name"];
+            if (type == "auth") sqlite_db_name = "FFMpegAuth.db";
             var sqlite_db = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_db_name);
             if (File.Exists(sqlite_db))
             {
@@ -1624,9 +1676,10 @@ namespace FFMPEG_Demo.Controllers
             }
         }
         [NonAction]
-        public string GetSQLiteConnectionChangePassword(string _password = "")
+        public string GetSQLiteConnectionChangePassword(string _password = "", string type = null)
         {
             string sqlite_db_name = ConfigurationManager.AppSettings["sqlite_db_name"];
+            if (type == "auth") sqlite_db_name = "FFMpegAuth.db";
             var sqlite_db = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_db_name);
             string conStr = "";
             if (File.Exists(sqlite_db))
@@ -1689,6 +1742,17 @@ namespace FFMPEG_Demo.Controllers
                         con.ChangePassword(_password);
                         con.Close();
                         UpdateHavePassword(1);
+
+                        // Auth DB 
+                        string FFMpegConAuth = GetSQLiteConnectionChangePassword("", "auth");
+                        if (!string.IsNullOrEmpty(FFMpegConAuth))
+                        {
+                            SQLiteConnection conAuth = new SQLiteConnection(FFMpegConAuth);
+                            conAuth.Open();
+                            conAuth.ChangePassword(_password);
+                            conAuth.Close();
+                        }
+
                         return Request.CreateResponse(HttpStatusCode.OK, new { data = "password added to database!" });
                     }
                     else if (type == "remove")
@@ -1703,6 +1767,17 @@ namespace FFMPEG_Demo.Controllers
                         con.ChangePassword(String.Empty);
                         con.Close();
                         UpdateHavePassword(0);
+
+                        // Auth DB 
+                        string FFMpegConAuth = GetSQLiteConnectionChangePassword(_password, "auth");
+                        if (!string.IsNullOrEmpty(FFMpegConAuth))
+                        {
+                            SQLiteConnection conAuth = new SQLiteConnection(FFMpegConAuth);
+                            conAuth.Open();
+                            conAuth.ChangePassword(String.Empty);
+                            conAuth.Close();
+                        }
+
                         return Request.CreateResponse(HttpStatusCode.OK, new { data = "password removed from database!" });
                     }
                 }
@@ -1733,28 +1808,55 @@ namespace FFMPEG_Demo.Controllers
         }
         #endregion
 
-        #region License 
-        [HttpGet]
+        #region License & UI
+        [HttpPost]
         public HttpResponseMessage LicenseGenerateKey()
         {
+            int LicenceUptoDay = 0;
             Generate generate = new Generate();
-            string PasswordTxt = "my_secreate_phase";
+            string PasswordTxt = "secreate_phase_is_samrat_ghosh";
             generate.secretPhase = PasswordTxt;
-            string DayTxt = "30";
-            string SerialTxt = generate.doKey(Convert.ToInt32(DayTxt));
-
-            Validate validate = new Validate();
-            validate.secretPhase = PasswordTxt;
-            validate.Key = SerialTxt;
-            string StatusTxt = "Creation Date: " + validate.CreationDate + ", " +
-                "Expire Date: " + validate.ExpireDate + ", " +
-                "Day Left: " + validate.DaysLeft;
-
-            var obj = new { alert = "LicenseGenerateKey", data = new { PasswordTxt, DayTxt, SerialTxt, StatusTxt } };
-            return Request.CreateResponse(HttpStatusCode.OK, obj);
+            string serialKey = generate.doKey(LicenceUptoDay);
+            string appId = AppID();
+            string KeySalt = LicenceKeySalt(appId);
+            serialKey = serialKey + "-" + KeySalt;
+            return Request.CreateResponse(HttpStatusCode.OK, new { appId, serialKey });
             // https://www.youtube.com/playlist?list=PLsLeUGNmwEPzMUJcfy_7TfVsxu6j9GVaZ
         }
+        [HttpPost]
+        public HttpResponseMessage LicenseValidateKey(LicenseGenerateKey data)
+        {
+            if (data == null || (string.IsNullOrWhiteSpace(data.LicenceAppId) || string.IsNullOrWhiteSpace(data.LicenceKey)))
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide LicenceAppId and LicenceKey!" });
+            }
+            try
+            {
+                string PasswordTxt = "secreate_phase_is_samrat_ghosh";
+                Validate validate = new Validate();
+                validate.secretPhase = PasswordTxt;
+                validate.Key = RemoveLicenceKeySalt(data.LicenceKey);
+                //data.LicenceAppId
 
+                string creationDate = validate.CreationDate.ToString();
+                //string expireDate = validate.ExpireDate.ToString();
+                //string daysLeft = validate.DaysLeft.ToString();
+                bool validateSalt = ValidateLicenseSalt(data.LicenceKey, data.LicenceAppId);
+                if (!validateSalt)
+                {
+                    return Request.CreateResponse(HttpStatusCode.OK, new { data = "licence key not valid!" });
+                }
+
+                // Activate app here
+                return Request.CreateResponse(HttpStatusCode.OK, new { creationDate });
+            }
+            catch (Exception ex)
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "licence key not valid!" });
+            }
+
+            // https://www.youtube.com/playlist?list=PLsLeUGNmwEPzMUJcfy_7TfVsxu6j9GVaZ
+        }
         [HttpGet]
         public HttpResponseMessage DeviceInfo()
         {
@@ -1775,6 +1877,57 @@ namespace FFMPEG_Demo.Controllers
                 OSVersion
             };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
+
+        [NonAction]
+        public string AppID()
+        {
+            Guid g = Guid.NewGuid();
+            string uid = Guid.NewGuid().ToString();
+            //string dt = DateTime.Now.ToString("yyyyMMdd");
+            //string Id = dt + "-" + uid;
+            return uid;
+        }
+        [NonAction]
+        public string LicenceKeySalt(string appId)
+        {
+            string c = "trsnz";
+            StringBuilder d = new StringBuilder();
+            string[] a = appId.Split('-');
+            if (a.Length >= 5)
+            {
+                foreach (string b in a)
+                {
+                    d.Append(b.Substring(0, 1));
+                }
+                c = d.ToString();
+            }
+            return c.ToUpper();
+        }
+        [NonAction]
+        public string RemoveLicenceKeySalt(string serialKey)
+        {
+            StringBuilder b = new StringBuilder();
+            string[] a = serialKey.Split('-');
+            for (int i = 0; i < a.Length - 1; i++)
+            {
+                b.Append(a[i]);
+                b.Append("-");
+            }
+            b.Remove(b.Length - 1, 1);
+            return b.ToString();
+        }
+        [NonAction]
+        public bool ValidateLicenseSalt(string serialKey, string appId)
+        {
+            string saltFromAppId = LicenceKeySalt(appId);
+            string saltFromKey = "";
+            string[] a = serialKey.Split('-');
+            if (a.Length >= 5)
+            {
+                saltFromKey = a[a.Length - 1];
+            }
+            return saltFromAppId == saltFromKey;
         }
 
         #endregion
