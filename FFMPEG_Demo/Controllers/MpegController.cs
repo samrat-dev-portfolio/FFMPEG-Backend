@@ -1817,6 +1817,7 @@ namespace FFMPEG_Demo.Controllers
             string PasswordTxt = "secreate_phase_is_samrat_ghosh";
             generate.secretPhase = PasswordTxt;
             string serialKey = generate.doKey(LicenceUptoDay);
+
             string appId = AppID();
             string KeySalt = LicenceKeySalt(appId);
             serialKey = serialKey + "-" + KeySalt;
@@ -1898,13 +1899,14 @@ namespace FFMPEG_Demo.Controllers
                     SQLiteConnection con = new SQLiteConnection(FFMpegCon);
                     #endregion
                     string sql = @"INSERT INTO tblKeygen 
-                              ([appId],[serialKey])      
-                              VALUES(@appId,@serialKey)";
+                              ([appId],[serialKey],[creationDate])      
+                              VALUES(@appId,@serialKey,@creationDate)";
                     var insert_result = con.Execute(sql,
                         new
                         {
                             @appId = data.LicenceAppId,
                             @serialKey = data.LicenceKey,
+                            @creationDate = data.creationDate
                         });
                 }
                 catch (Exception ex)
@@ -1913,6 +1915,94 @@ namespace FFMPEG_Demo.Controllers
                 }
                 return Request.CreateResponse(HttpStatusCode.Created, new { data = "data saved successfully!" });
             }
+        }
+        [HttpGet]
+        public HttpResponseMessage getLicenseKeyGens([FromUri] LicenseKeyGenPageQuery query)
+        {
+            string pageindex = query.pageindex;
+            string limit = query.limit;
+            string orderby = query.orderby;
+            string desc = query.desc; // 'true'|'false'
+
+            string appId = query.appId;
+            string serialKey = query.serialKey;
+            string creationDate = query.creationDate;
+
+            #region Constant           
+            if (orderby == null)
+            {
+                orderby = "creationDate";
+            }
+            if (desc == "false")
+            {
+                desc = "asc";
+            }
+            else if (desc == "true" || desc == null)
+            {
+                desc = "desc";
+            }
+            string _where = "";
+            if (appId != null)
+            {
+                _where = " WHERE appId like '%" + appId + "%'";
+            }
+            if (serialKey != null)
+            {
+                if (_where == "")
+                    _where = " WHERE";
+                else
+                    _where += " AND";
+                _where += " serialKey like '%" + serialKey + "%'";
+            }
+            if (creationDate != null)
+            {
+                if (_where == "")
+                    _where = " WHERE";
+                else
+                    _where += " AND";
+                _where += " creationDate like '%" + creationDate + "%'";
+            }
+
+            int _limit = 3;
+            int _pageindex = 0;
+            if (limit != null)
+            {
+                Int32.TryParse(limit, out _limit);
+                if (_limit < 3)
+                    _limit = 3;
+            }
+            if (pageindex != null)
+            {
+                Int32.TryParse(pageindex, out _pageindex);
+                if (_pageindex < 0)
+                    _pageindex = 0;
+            }
+            int _offset = _pageindex * _limit;
+
+            #endregion
+
+            #region SQlite database
+            string FFMpegCon = GetSQLiteAuthConnection();
+            if (string.IsNullOrEmpty(FFMpegCon))
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+            }
+            SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+            #endregion
+            string sql = @"SELECT appId, serialKey, creationDate FROM [tblKeygen]" + _where + " order by " + orderby + " " + desc + " LIMIT " + _limit + " OFFSET " + _offset;
+
+            List<LicenseKeyGenPage> data = con.Query<LicenseKeyGenPage>(sql).ToList<LicenseKeyGenPage>();
+            string count = con.ExecuteScalar<string>("SELECT count(*) FROM [tblKeygen]" + _where);
+
+            int _count = data.Count();
+            Int32.TryParse(count, out _count);
+            int _totalPage = Convert.ToInt32(_count / _limit);
+            if ((_count % _limit) > 0)
+            {
+                _totalPage += 1;
+            }
+            var obj = new { data, pageindex = Convert.ToString(_pageindex), totalPage = Convert.ToString(_totalPage) };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
 
         [NonAction]
