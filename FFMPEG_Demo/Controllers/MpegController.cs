@@ -1916,6 +1916,40 @@ namespace FFMPEG_Demo.Controllers
                 return Request.CreateResponse(HttpStatusCode.Created, new { data = "data saved successfully!" });
             }
         }
+        [HttpPost]
+        public HttpResponseMessage RemoveLicenseKeyGen(LicenseGenerateKey data)
+        {
+            if (data == null || (string.IsNullOrWhiteSpace(data.LicenceAppId)))
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { data = "Please provide LicenceAppId!" });
+            }
+            else
+            {
+                try
+                {
+                    #region SQlite database
+                    string FFMpegCon = GetSQLiteAuthConnection();
+                    if (string.IsNullOrEmpty(FFMpegCon))
+                    {
+                        return Request.CreateResponse(HttpStatusCode.NotFound, new { data = "no database found!" });
+                    }
+                    SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                    #endregion
+                    string sql = @"DELETE FROM tblKeygen WHERE
+                                [appId]=@appId";
+                    var delete_result = con.Execute(sql,
+                        new
+                        {
+                            @appId = data.LicenceAppId,
+                        });
+                }
+                catch (Exception ex)
+                {
+                    return Request.CreateResponse(HttpStatusCode.OK, new { error = "Keygen delete error!" });
+                }
+                return Request.CreateResponse(HttpStatusCode.Created, new { data = "data deleted successfully!" });
+            }
+        }
         [HttpGet]
         public HttpResponseMessage getLicenseKeyGens([FromUri] LicenseKeyGenPageQuery query)
         {
@@ -1989,7 +2023,7 @@ namespace FFMPEG_Demo.Controllers
             }
             SQLiteConnection con = new SQLiteConnection(FFMpegCon);
             #endregion
-            string sql = @"SELECT appId, serialKey, creationDate FROM [tblKeygen]" + _where + " order by " + orderby + " " + desc + " LIMIT " + _limit + " OFFSET " + _offset;
+            string sql = @"SELECT appId, serialKey, creationDate, deviceId, machineName, clientName, description FROM [tblKeygen]" + _where + " order by " + orderby + " " + desc + " LIMIT " + _limit + " OFFSET " + _offset;
 
             List<LicenseKeyGenPage> data = con.Query<LicenseKeyGenPage>(sql).ToList<LicenseKeyGenPage>();
             string count = con.ExecuteScalar<string>("SELECT count(*) FROM [tblKeygen]" + _where);
