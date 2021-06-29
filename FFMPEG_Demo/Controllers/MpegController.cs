@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using DeviceId;
 using FFMPEG_Demo.Filter;
 using FFMPEG_Demo.Models;
 using Microsoft.IdentityModel.Tokens;
@@ -13,11 +12,14 @@ using System.Data.SQLite;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
+using System.IO.IsolatedStorage;
 using System.Linq;
+using System.Management;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -671,6 +673,7 @@ namespace FFMPEG_Demo.Controllers
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
 
+        #region IgnoreApi
         [NonAction]
         private string TokenException(string error)
         {
@@ -684,7 +687,6 @@ namespace FFMPEG_Demo.Controllers
             }
             return ret;
         }
-
         [NonAction]
         private string TokenUserData(ClaimsPrincipal claimsPrincipal, UserDataType userDataType)
         {
@@ -697,6 +699,8 @@ namespace FFMPEG_Demo.Controllers
             }
             return ret;
         }
+        #endregion
+
         #endregion
 
         #region UI
@@ -1622,76 +1626,6 @@ namespace FFMPEG_Demo.Controllers
         #endregion
 
         #region SQlite
-        [NonAction]
-        public string GetSQLiteAuthConnection()
-        {
-            return GetSQLiteConnection("auth");
-        }
-        [NonAction]
-        public string GetSQLiteConnection(string type = null)
-        {
-            string _password = "sqlite_A1d4m1N";
-            #region HavePass
-            bool HavePass = false;
-            string sqlite_infodb_name = "Info.db";
-            var sqlite_infodb = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_infodb_name);
-            string conStr = "";
-            if (File.Exists(sqlite_infodb))
-            {
-                string conStrInfoDB = string.Format("Data Source={0};Version=3;", sqlite_infodb);
-                SQLiteConnection con = new SQLiteConnection(conStrInfoDB);
-                string sql = @"select * from havePass LIMIT 1";
-                string _havePass = con.ExecuteScalar<string>(sql);
-                HavePass = _havePass == "0" ? false : true;
-            }
-            #endregion
-            string sqlite_db_name = ConfigurationManager.AppSettings["sqlite_db_name"];
-            if (type == "auth") sqlite_db_name = "FFMpegAuth.db";
-            var sqlite_db = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_db_name);
-            if (File.Exists(sqlite_db))
-            {
-                conStr = string.Format("Data Source={0};Version=3;", sqlite_db);
-                if (HavePass)
-                {
-                    conStr = string.Format("Data Source={0};Version=3;Password={1};", sqlite_db, _password);
-                }
-            }
-            return conStr;
-        }
-        [NonAction]
-        public void UpdateHavePassword(int havePass)
-        {
-            string sqlite_infodb_name = "Info.db";
-            var sqlite_infodb = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_infodb_name);
-            if (File.Exists(sqlite_infodb))
-            {
-                string conStrInfoDB = string.Format("Data Source={0};Version=3;", sqlite_infodb);
-                SQLiteConnection conInfo = new SQLiteConnection(conStrInfoDB);
-                string sql = @"UPDATE havePass SET havePass = @havePass;";
-                var insert_result = conInfo.Execute(sql,
-                    new
-                    {
-                        @havePass = havePass
-                    });
-            }
-        }
-        [NonAction]
-        public string GetSQLiteConnectionChangePassword(string _password = "", string type = null)
-        {
-            string sqlite_db_name = ConfigurationManager.AppSettings["sqlite_db_name"];
-            if (type == "auth") sqlite_db_name = "FFMpegAuth.db";
-            var sqlite_db = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_db_name);
-            string conStr = "";
-            if (File.Exists(sqlite_db))
-            {
-                conStr = string.Format("Data Source={0};Version=3;", sqlite_db);
-                if (!string.IsNullOrEmpty(_password))
-                {
-                    conStr = string.Format("Data Source={0};Version=3;Password={1};", sqlite_db, _password);
-                }
-            }
-            return conStr;
-        }
         [HttpGet]
         public HttpResponseMessage SQliteHavePassword()
         {
@@ -1806,6 +1740,80 @@ namespace FFMPEG_Demo.Controllers
             };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
+
+        #region IgnoreApi
+        [NonAction]
+        public string GetSQLiteAuthConnection()
+        {
+            return GetSQLiteConnection("auth");
+        }
+        [NonAction]
+        public string GetSQLiteConnection(string type = null)
+        {
+            string _password = "sqlite_A1d4m1N";
+            #region HavePass
+            bool HavePass = false;
+            string sqlite_infodb_name = "Info.db";
+            var sqlite_infodb = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_infodb_name);
+            string conStr = "";
+            if (File.Exists(sqlite_infodb))
+            {
+                string conStrInfoDB = string.Format("Data Source={0};Version=3;", sqlite_infodb);
+                SQLiteConnection con = new SQLiteConnection(conStrInfoDB);
+                string sql = @"select * from havePass LIMIT 1";
+                string _havePass = con.ExecuteScalar<string>(sql);
+                HavePass = _havePass == "0" ? false : true;
+            }
+            #endregion
+            string sqlite_db_name = ConfigurationManager.AppSettings["sqlite_db_name"];
+            if (type == "auth") sqlite_db_name = "FFMpegAuth.db";
+            var sqlite_db = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_db_name);
+            if (File.Exists(sqlite_db))
+            {
+                conStr = string.Format("Data Source={0};Version=3;", sqlite_db);
+                if (HavePass)
+                {
+                    conStr = string.Format("Data Source={0};Version=3;Password={1};", sqlite_db, _password);
+                }
+            }
+            return conStr;
+        }
+        [NonAction]
+        public void UpdateHavePassword(int havePass)
+        {
+            string sqlite_infodb_name = "Info.db";
+            var sqlite_infodb = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_infodb_name);
+            if (File.Exists(sqlite_infodb))
+            {
+                string conStrInfoDB = string.Format("Data Source={0};Version=3;", sqlite_infodb);
+                SQLiteConnection conInfo = new SQLiteConnection(conStrInfoDB);
+                string sql = @"UPDATE havePass SET havePass = @havePass;";
+                var insert_result = conInfo.Execute(sql,
+                    new
+                    {
+                        @havePass = havePass
+                    });
+            }
+        }
+        [NonAction]
+        public string GetSQLiteConnectionChangePassword(string _password = "", string type = null)
+        {
+            string sqlite_db_name = ConfigurationManager.AppSettings["sqlite_db_name"];
+            if (type == "auth") sqlite_db_name = "FFMpegAuth.db";
+            var sqlite_db = HttpContext.Current.Server.MapPath("~/App_Data/" + sqlite_db_name);
+            string conStr = "";
+            if (File.Exists(sqlite_db))
+            {
+                conStr = string.Format("Data Source={0};Version=3;", sqlite_db);
+                if (!string.IsNullOrEmpty(_password))
+                {
+                    conStr = string.Format("Data Source={0};Version=3;Password={1};", sqlite_db, _password);
+                }
+            }
+            return conStr;
+        }
+        #endregion
+
         #endregion
 
         #region License & UI
@@ -1863,22 +1871,81 @@ namespace FFMPEG_Demo.Controllers
         {
             string MachineName = System.Net.Dns.GetHostName();
             string OSVersion = System.Environment.OSVersion.VersionString;
+            //string UserName = System.Environment.UserName;
 
-            string deviceId = new DeviceIdBuilder()
-            .AddMachineName()
-            .AddMacAddress()
-            .AddProcessorId()
-            .AddMotherboardSerialNumber()
-            .ToString();
+            string MotherboardSerialNumber = ManagementQuerySearch("Win32_BaseBoard", "SerialNumber");
+            string MotherboardProduct = ManagementQuerySearch("Win32_BaseBoard", "Product");
+            string MotherboardDetails = string.Format("{0}{1}", MotherboardSerialNumber, MotherboardProduct);
+
+            string DiskDriveSerialNumber = ManagementQuerySearch("Win32_DiskDrive", "SerialNumber");
+            string DiskDriveModel = ManagementQuerySearch("Win32_DiskDrive", "Model");
+            string DiskDriveDetails = string.Format("{0}{1}", DiskDriveSerialNumber, DiskDriveModel);
+
+            string ProcessorId = ManagementQuerySearch("Win32_Processor", "ProcessorId");
+            string ProcessorName = ManagementQuerySearch("Win32_Processor", "Name");
+            string ProcessorDetails = string.Format("{0}{1}", ProcessorId, ProcessorName);
+
+            string deviceDetails = string.Format("{0}.{1}.{2}.{3}.{4}", MachineName, OSVersion, MotherboardDetails, DiskDriveDetails, ProcessorDetails);
+
+            RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.Multiline;
+            string patternRemoveSpace = @"(\s|cpu|\(r\)|\(TM\)|ghz|@)";
+            string deviceDetailsFilter = Regex.Replace(deviceDetails, patternRemoveSpace, "", options);
+
+            string deviceId = Encrypt("ffmpegSecret", deviceDetailsFilter);
+            //string deviceIdDec = Decrypt("ffmpegSecret", deviceIdEnc);
+
             var obj = new
             {
-                alert = "DeviceInfo",
-                deviceId,
                 MachineName,
-                OSVersion
+                OSVersion,
+                MotherboardSerialNumber,
+                MotherboardProduct,
+                DiskDriveSerialNumber,
+                DiskDriveModel,
+                ProcessorId,
+                ProcessorName,
+                deviceDetails,
+                deviceDetailsFilter,
+                deviceId
+            };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+
+            //string deviceId = new DeviceIdBuilder()
+            //.AddMachineName()
+            //.AddMacAddress()
+            //.AddProcessorId()
+            //.AddMotherboardSerialNumber()
+            //.ToString();
+        }
+
+        [HttpGet]
+        public HttpResponseMessage ManagementQuery(string qs = "Win32_BaseBoard")
+        {
+            // Win32_DiskDrive, Win32_MotherboardDevice, Win32_BaseBoard , Win32_NetworkAdapterConfiguration
+
+            ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM " + qs);
+            List<GetManagementQuery> list = new List<GetManagementQuery>();
+
+            foreach (ManagementObject mo in searcher.Get())
+            {
+                foreach (PropertyData prop in mo.Properties)
+                {
+                    var _val = prop.Value;
+                    if (_val == null) _val = "";
+                    var data = new GetManagementQuery { name = prop.Name, value = _val.ToString() };
+                    list.Add(data);
+                }
+            }
+
+            var obj = new
+            {
+                alert = "ManagementQuery",
+                qs,
+                list
             };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
+
         [HttpPost]
         public HttpResponseMessage AddLicenseKeyGen(LicenseGenerateKey data)
         {
@@ -2038,7 +2105,39 @@ namespace FFMPEG_Demo.Controllers
             var obj = new { data, pageindex = Convert.ToString(_pageindex), totalPage = Convert.ToString(_totalPage) };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
+        [HttpGet]
+        public HttpResponseMessage Activation()
+        {
+            // check from db
 
+            // isolated storage
+            // %LOCALAPPDATA%\IsolatedStorage\
+            // write
+            string CryptoKey = "samrat";
+            string key = "LECYA-YPVWC-QJPAN-NFBNW";
+            IsolatedStorageFile storageFile = IsolatedStorageFile.GetStore(IsolatedStorageScope.User | IsolatedStorageScope.Assembly, null, null);
+            IsolatedStorageFileStream storageFileStream = new IsolatedStorageFileStream("ffmpeg_settings_2.txt", FileMode.Create, storageFile);
+            StreamWriter streamWriter = new StreamWriter(storageFileStream);
+            key = Encrypt(CryptoKey, key);
+            streamWriter.WriteLine(key);
+            streamWriter.Dispose();
+            storageFileStream.Dispose();
+
+            // read
+            IsolatedStorageFileStream storageFileStreamOpen = new IsolatedStorageFileStream("ffmpeg_settings_2.txt", FileMode.OpenOrCreate, storageFile);
+            StreamReader streamReader = new StreamReader(storageFileStreamOpen);
+            string keyRead = streamReader.ReadLine();
+            keyRead = Decrypt(CryptoKey, keyRead);
+            streamReader.Dispose();
+            storageFileStreamOpen.Dispose();
+
+            // encryption
+
+            var obj = new { info = "Activation", key, keyRead };
+            return Request.CreateResponse(HttpStatusCode.OK, obj);
+        }
+
+        #region IgnoreApi
         [NonAction]
         public string AppID()
         {
@@ -2089,6 +2188,150 @@ namespace FFMPEG_Demo.Controllers
             }
             return saltFromAppId == saltFromKey;
         }
+
+        [NonAction]
+        public string Encrypt(string key, string data)
+        {
+            string encData = null;
+            byte[][] keys = GetHashKeys(key);
+
+            try
+            {
+                encData = EncryptStringToBytes_Aes(data, keys[0], keys[1]);
+            }
+            catch (CryptographicException) { }
+            catch (ArgumentNullException) { }
+
+            return encData;
+        }
+        [NonAction]
+        public string Decrypt(string key, string data)
+        {
+            string decData = null;
+            byte[][] keys = GetHashKeys(key);
+
+            try
+            {
+                decData = DecryptStringFromBytes_Aes(data, keys[0], keys[1]);
+            }
+            catch (CryptographicException) { }
+            catch (ArgumentNullException) { }
+
+            return decData;
+        }
+
+        private byte[][] GetHashKeys(string key)
+        {
+            byte[][] result = new byte[2][];
+            Encoding enc = Encoding.UTF8;
+
+            SHA256 sha2 = new SHA256CryptoServiceProvider();
+
+            byte[] rawKey = enc.GetBytes(key);
+            byte[] rawIV = enc.GetBytes(key);
+
+            byte[] hashKey = sha2.ComputeHash(rawKey);
+            byte[] hashIV = sha2.ComputeHash(rawIV);
+
+            Array.Resize(ref hashIV, 16);
+
+            result[0] = hashKey;
+            result[1] = hashIV;
+
+            return result;
+        }
+        //source: https://msdn.microsoft.com/de-de/library/system.security.cryptography.aes(v=vs.110).aspx
+        private static string EncryptStringToBytes_Aes(string plainText, byte[] Key, byte[] IV)
+        {
+            if (plainText == null || plainText.Length <= 0)
+                throw new ArgumentNullException("plainText");
+            if (Key == null || Key.Length <= 0)
+                throw new ArgumentNullException("Key");
+            if (IV == null || IV.Length <= 0)
+                throw new ArgumentNullException("IV");
+
+            byte[] encrypted;
+
+            using (AesManaged aesAlg = new AesManaged())
+            {
+                aesAlg.Key = Key;
+                aesAlg.IV = IV;
+
+                ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+                using (MemoryStream msEncrypt = new MemoryStream())
+                {
+                    using (CryptoStream csEncrypt =
+                            new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                    {
+                        using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                        {
+                            swEncrypt.Write(plainText);
+                        }
+                        encrypted = msEncrypt.ToArray();
+                    }
+                }
+            }
+            return Convert.ToBase64String(encrypted);
+        }
+        //source: https://msdn.microsoft.com/de-de/library/system.security.cryptography.aes(v=vs.110).aspx
+        private static string DecryptStringFromBytes_Aes(string cipherTextString, byte[] Key, byte[] IV)
+        {
+            byte[] cipherText = Convert.FromBase64String(cipherTextString);
+
+            if (cipherText == null || cipherText.Length <= 0)
+                throw new ArgumentNullException("cipherText");
+            if (Key == null || Key.Length <= 0)
+                throw new ArgumentNullException("Key");
+            if (IV == null || IV.Length <= 0)
+                throw new ArgumentNullException("IV");
+
+            string plaintext = null;
+
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Key = Key;
+                aesAlg.IV = IV;
+
+                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+
+                using (MemoryStream msDecrypt = new MemoryStream(cipherText))
+                {
+                    using (CryptoStream csDecrypt =
+                            new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                    {
+                        using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                        {
+                            plaintext = srDecrypt.ReadToEnd();
+                        }
+                    }
+                }
+            }
+            return plaintext;
+        }
+
+        [NonAction]
+        public string ManagementQuerySearch(string qs = null, string key = null)
+        {
+            if (!string.IsNullOrEmpty(qs) && !string.IsNullOrEmpty(key))
+            {
+                try
+                {
+                    ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM " + qs);
+                    foreach (ManagementObject queryObj in searcher.Get())
+                    {
+                        return queryObj[key].ToString().Trim();
+                    }
+                    return "";
+                }
+                catch (Exception e)
+                {
+                    return "";
+                }
+            }
+            return "";
+        }
+        #endregion
 
         #endregion
     }

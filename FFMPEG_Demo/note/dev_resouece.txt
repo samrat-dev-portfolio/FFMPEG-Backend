@@ -11,8 +11,7 @@ Code Plan
    And so trying to get http://example.com/hls/segment001.ts will result in 403 or other error status.
 
    https://medium.com/swlh/a-secure-implementation-of-json-web-tokens-jwt-in-c-710d06ea243
-
-
+   
 Download sqlite Exe
    https://www.youtube.com/watch?v=wXEZZ2JT3-k
    https://www.sqlite.org/download.html
@@ -25,3 +24,11 @@ DB Browser - Create a table with foreign keys
    https://www.youtube.com/watch?v=_hTDkOdr7J8
 Protect SQLite Database File with Password using C# 
     https://www.youtube.com/watch?v=bT5jKWebgmM&list=WL&index=16&t=707s
+
+How To Protect Your Software With A Product Activation Serial Key
+	https://www.youtube.com/watch?v=tVj2CtzTsxY&list=PLsLeUGNmwEPzMUJcfy_7TfVsxu6j9GVaZ&index=3&t=1149s
+
+
+   Win32_NetworkAdapterConfiguration
+
+
