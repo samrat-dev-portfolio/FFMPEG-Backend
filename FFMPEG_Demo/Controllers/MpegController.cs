@@ -1866,86 +1866,184 @@ namespace FFMPEG_Demo.Controllers
 
             // https://www.youtube.com/playlist?list=PLsLeUGNmwEPzMUJcfy_7TfVsxu6j9GVaZ
         }
-        [HttpGet]
+
+        [HttpPost]
         public HttpResponseMessage DeviceInfo()
         {
-            string MachineName = System.Net.Dns.GetHostName();
-            string OSVersion = System.Environment.OSVersion.VersionString;
-            //string UserName = System.Environment.UserName;
-
-            string MotherboardSerialNumber = ManagementQuerySearch("Win32_BaseBoard", "SerialNumber");
-            string MotherboardProduct = ManagementQuerySearch("Win32_BaseBoard", "Product");
-            string MotherboardDetails = string.Format("{0}{1}", MotherboardSerialNumber, MotherboardProduct);
-
-            string DiskDriveSerialNumber = ManagementQuerySearch("Win32_DiskDrive", "SerialNumber");
-            string DiskDriveModel = ManagementQuerySearch("Win32_DiskDrive", "Model");
-            string DiskDriveDetails = string.Format("{0}{1}", DiskDriveSerialNumber, DiskDriveModel);
-
-            string ProcessorId = ManagementQuerySearch("Win32_Processor", "ProcessorId");
-            string ProcessorName = ManagementQuerySearch("Win32_Processor", "Name");
-            string ProcessorDetails = string.Format("{0}{1}", ProcessorId, ProcessorName);
-
-            string deviceDetails = string.Format("{0}.{1}.{2}.{3}.{4}", MachineName, OSVersion, MotherboardDetails, DiskDriveDetails, ProcessorDetails);
-
-            RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.Multiline;
-            string patternRemoveSpace = @"(\s|cpu|\(r\)|\(TM\)|ghz|@)";
-            string deviceDetailsFilter = Regex.Replace(deviceDetails, patternRemoveSpace, "", options);
-
-            string deviceId = Encrypt("ffmpegSecret", deviceDetailsFilter);
-            //string deviceIdDec = Decrypt("ffmpegSecret", deviceIdEnc);
-
+            string deviceId = DeviceId();
             var obj = new
             {
-                MachineName,
-                OSVersion,
-                MotherboardSerialNumber,
-                MotherboardProduct,
-                DiskDriveSerialNumber,
-                DiskDriveModel,
-                ProcessorId,
-                ProcessorName,
-                deviceDetails,
-                deviceDetailsFilter,
+                //MachineName,
+                //OSVersion,
+                //MotherboardSerialNumber,
+                //MotherboardProduct,
+                //DiskDriveSerialNumber,
+                //DiskDriveModel,
+                //ProcessorId,
+                //ProcessorName,
+                //deviceDetails,
+                //deviceDetailsFilter,
                 deviceId
             };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
-
-            //string deviceId = new DeviceIdBuilder()
-            //.AddMachineName()
-            //.AddMacAddress()
-            //.AddProcessorId()
-            //.AddMotherboardSerialNumber()
-            //.ToString();
         }
-
-        [HttpGet]
-        public HttpResponseMessage ManagementQuery(string qs = "Win32_BaseBoard")
+        [HttpPost]
+        public HttpResponseMessage KeyActivation(KeyActivation data)
         {
-            // Win32_DiskDrive, Win32_MotherboardDevice, Win32_BaseBoard , Win32_NetworkAdapterConfiguration
-
-            ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM " + qs);
-            List<GetManagementQuery> list = new List<GetManagementQuery>();
-
-            foreach (ManagementObject mo in searcher.Get())
+            if (data == null || (string.IsNullOrWhiteSpace(data.appId) || string.IsNullOrWhiteSpace(data.serialKey) || string.IsNullOrWhiteSpace(data.deviceId)))
             {
-                foreach (PropertyData prop in mo.Properties)
+                return Request.CreateResponse(HttpStatusCode.OK, new { error = "Please provide AppId and LicenceKey and DeviceId!" });
+            }
+            else
+            {
+                try
                 {
-                    var _val = prop.Value;
-                    if (_val == null) _val = "";
-                    var data = new GetManagementQuery { name = prop.Name, value = _val.ToString() };
-                    list.Add(data);
+                    #region SQlite database
+                    string FFMpegCon = GetSQLiteAuthConnection();
+                    if (string.IsNullOrEmpty(FFMpegCon))
+                    {
+                        return Request.CreateResponse(HttpStatusCode.NotFound, new { error = "no database found!" });
+                    }
+                    SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                    #endregion
+                    string sql = @"SELECT * FROM tblKeygen WHERE
+                              [appId] = @appId AND [serialKey] = @serialKey";
+                    List<LicenseKeyGenPage> result = con.Query<LicenseKeyGenPage>(sql, new
+                    {
+                        @appId = data.appId,
+                        @serialKey = data.serialKey
+                    }).ToList<LicenseKeyGenPage>();
+                    if (result.Count > 0)
+                    {
+                        var device_Id = result.FirstOrDefault().deviceId;
+                        if (string.IsNullOrEmpty(device_Id))
+                        {
+                            // update
+                            sql = @"UPDATE tblKeygen 
+                                    SET deviceId = @deviceId, clientName = @clientName, description = @description    
+                                    WHERE [appId] = @appId AND [serialKey] = @serialKey";
+                            var update_result = con.Execute(sql,
+                               new
+                               {
+                                   @appId = data.appId,
+                                   @serialKey = data.serialKey,
+                                   @deviceId = data.deviceId,
+                                   @clientName = data.clientName,
+                                   @description = data.description,
+                               });
+                        }
+                        else
+                        {
+                            // update client name
+                            sql = @"UPDATE tblKeygen 
+                                    SET clientName = @clientName, description = @description    
+                                    WHERE [appId] = @appId AND [serialKey] = @serialKey AND deviceId = @deviceId";
+                            var update_result = con.Execute(sql,
+                               new
+                               {
+                                   @appId = data.appId,
+                                   @serialKey = data.serialKey,
+                                   @deviceId = data.deviceId,
+                                   @clientName = data.clientName,
+                                   @description = data.description,
+                               });
+                            return Request.CreateResponse(HttpStatusCode.OK, new { error = "Key already activated!", error_data = "ClientName and Description updated!" });
+                        }
+                    }
+                    else
+                    {
+                        return Request.CreateResponse(HttpStatusCode.OK, new { error = "Key does not exist!" });
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    return Request.CreateResponse(HttpStatusCode.OK, new { error = "KeyActivation error!" });
+                }
+                return Request.CreateResponse(HttpStatusCode.Created, new { data = "Key Activated successfully!" });
+            }
+        }
+        [HttpPost]
+        public HttpResponseMessage KeyActivationClient(KeyActivation data)
+        {
+            if (data == null || (string.IsNullOrWhiteSpace(data.appId) || string.IsNullOrWhiteSpace(data.serialKey) || string.IsNullOrWhiteSpace(data.deviceId)))
+            {
+                return Request.CreateResponse(HttpStatusCode.OK, new { error = "Please provide AppId and LicenceKey and DeviceId!" });
+            }
+            else
+            {
+                try
+                {
+                    #region SQlite database
+                    string FFMpegCon = GetSQLiteConnection();
+                    if (string.IsNullOrEmpty(FFMpegCon))
+                    {
+                        return Request.CreateResponse(HttpStatusCode.NotFound, new { error = "no database found!" });
+                    }
+                    SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+                    #endregion
+                    string sql = @"INSERT INTO tblActivation 
+                              ([appId],[serialKey],[activationDate],[deviceId])      
+                              VALUES(@appId,@serialKey,@activationDate,@deviceId)";
+                    var insert_result = con.Execute(sql,
+                        new
+                        {
+                            @appId = data.appId,
+                            @serialKey = data.serialKey,
+                            @activationDate = data.activationDate,
+                            @deviceId = data.deviceId
+                        });
+                    IsolatedStorage_SaveAppId(data.appId);
+                }
+                catch (Exception ex)
+                {
+                    return Request.CreateResponse(HttpStatusCode.OK, new { error = "KeyActivation error!" });
+                }
+                return Request.CreateResponse(HttpStatusCode.Created, new { data = "Key Activated successfully!" });
+            }
+        }
+        [HttpPost]
+        public HttpResponseMessage IsActivated()
+        {
+            bool _IsActivated = false;
+            string _data = "";
+            #region SQlite database
+            string FFMpegCon = GetSQLiteConnection();
+            if (string.IsNullOrEmpty(FFMpegCon))
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound, new { error = "no database found!" });
+            }
+            SQLiteConnection con = new SQLiteConnection(FFMpegCon);
+            #endregion
+
+            string AppId = IsolatedStorage_ReadAppId();
+            if (string.IsNullOrEmpty(AppId))
+            {
+                _data = "appId doesn\'t found in device";
+            }
+            else
+            {
+                string deviceId = DeviceId();
+                string sql = @"SELECT * FROM tblActivation WHERE
+                              [appId] = @appId AND [deviceId] = @deviceId";
+                int result = con.Query<LicenseKeyGenPage>(sql, new
+                {
+                    @appId = AppId,
+                    @deviceId = deviceId
+                }).Count();
+
+                if (result > 0)
+                {
+                    _IsActivated = true;
+                    _data = "device activated";
+                }
+                else
+                {
+                    _data = "device not activated";
                 }
             }
-
-            var obj = new
-            {
-                alert = "ManagementQuery",
-                qs,
-                list
-            };
-            return Request.CreateResponse(HttpStatusCode.OK, obj);
+            return Request.CreateResponse(HttpStatusCode.OK, new { activated = _IsActivated, data = _data });
         }
-
         [HttpPost]
         public HttpResponseMessage AddLicenseKeyGen(LicenseGenerateKey data)
         {
@@ -2105,35 +2203,32 @@ namespace FFMPEG_Demo.Controllers
             var obj = new { data, pageindex = Convert.ToString(_pageindex), totalPage = Convert.ToString(_totalPage) };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
-        [HttpGet]
-        public HttpResponseMessage Activation()
+
+        //[HttpGet]
+        public HttpResponseMessage ManagementQuery(string qs = "Win32_BaseBoard")
         {
-            // check from db
+            // Win32_DiskDrive, Win32_MotherboardDevice, Win32_BaseBoard , Win32_NetworkAdapterConfiguration
 
-            // isolated storage
-            // %LOCALAPPDATA%\IsolatedStorage\
-            // write
-            string CryptoKey = "samrat";
-            string key = "LECYA-YPVWC-QJPAN-NFBNW";
-            IsolatedStorageFile storageFile = IsolatedStorageFile.GetStore(IsolatedStorageScope.User | IsolatedStorageScope.Assembly, null, null);
-            IsolatedStorageFileStream storageFileStream = new IsolatedStorageFileStream("ffmpeg_settings_2.txt", FileMode.Create, storageFile);
-            StreamWriter streamWriter = new StreamWriter(storageFileStream);
-            key = Encrypt(CryptoKey, key);
-            streamWriter.WriteLine(key);
-            streamWriter.Dispose();
-            storageFileStream.Dispose();
+            ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM " + qs);
+            List<GetManagementQuery> list = new List<GetManagementQuery>();
 
-            // read
-            IsolatedStorageFileStream storageFileStreamOpen = new IsolatedStorageFileStream("ffmpeg_settings_2.txt", FileMode.OpenOrCreate, storageFile);
-            StreamReader streamReader = new StreamReader(storageFileStreamOpen);
-            string keyRead = streamReader.ReadLine();
-            keyRead = Decrypt(CryptoKey, keyRead);
-            streamReader.Dispose();
-            storageFileStreamOpen.Dispose();
+            foreach (ManagementObject mo in searcher.Get())
+            {
+                foreach (PropertyData prop in mo.Properties)
+                {
+                    var _val = prop.Value;
+                    if (_val == null) _val = "";
+                    var data = new GetManagementQuery { name = prop.Name, value = _val.ToString() };
+                    list.Add(data);
+                }
+            }
 
-            // encryption
-
-            var obj = new { info = "Activation", key, keyRead };
+            var obj = new
+            {
+                alert = "ManagementQuery",
+                qs,
+                list
+            };
             return Request.CreateResponse(HttpStatusCode.OK, obj);
         }
 
@@ -2146,6 +2241,43 @@ namespace FFMPEG_Demo.Controllers
             //string dt = DateTime.Now.ToString("yyyyMMdd");
             //string Id = dt + "-" + uid;
             return uid;
+        }
+        [NonAction]
+        public string DeviceId()
+        {
+            string MachineName = System.Net.Dns.GetHostName();
+            string OSVersion = System.Environment.OSVersion.VersionString;
+            //string UserName = System.Environment.UserName;
+
+            string MotherboardSerialNumber = ManagementQuerySearch("Win32_BaseBoard", "SerialNumber");
+            string MotherboardProduct = ManagementQuerySearch("Win32_BaseBoard", "Product");
+            string MotherboardDetails = string.Format("{0}{1}", MotherboardSerialNumber, MotherboardProduct);
+
+            string DiskDriveSerialNumber = ManagementQuerySearch("Win32_DiskDrive", "SerialNumber");
+            string DiskDriveModel = ManagementQuerySearch("Win32_DiskDrive", "Model");
+            string DiskDriveDetails = string.Format("{0}{1}", DiskDriveSerialNumber, DiskDriveModel);
+
+            string ProcessorId = ManagementQuerySearch("Win32_Processor", "ProcessorId");
+            string ProcessorName = ManagementQuerySearch("Win32_Processor", "Name");
+            string ProcessorDetails = string.Format("{0}{1}", ProcessorId, ProcessorName);
+
+            string deviceDetails = string.Format("{0}.{1}.{2}.{3}.{4}", MachineName, OSVersion, MotherboardDetails, DiskDriveDetails, ProcessorDetails);
+
+            RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.Multiline;
+            string patternRemoveSpace = @"(\s|cpu|\(r\)|\(TM\)|ghz|@)";
+            string deviceDetailsFilter = Regex.Replace(deviceDetails, patternRemoveSpace, "", options);
+
+            string deviceId = Encrypt("ffmpegSecret", deviceDetailsFilter);
+            //string deviceIdDec = Decrypt("ffmpegSecret", deviceIdEnc);
+
+            //string deviceId = new DeviceIdBuilder()
+            //.AddMachineName()
+            //.AddMacAddress()
+            //.AddProcessorId()
+            //.AddMotherboardSerialNumber()
+            //.ToString();
+
+            return deviceId;
         }
         [NonAction]
         public string LicenceKeySalt(string appId)
@@ -2330,6 +2462,33 @@ namespace FFMPEG_Demo.Controllers
                 }
             }
             return "";
+        }
+
+        [NonAction]
+        public void IsolatedStorage_SaveAppId(string appId)
+        {
+            string CryptoKey = "samrat";
+            IsolatedStorageFile storageFile = IsolatedStorageFile.GetStore(IsolatedStorageScope.User | IsolatedStorageScope.Assembly, null, null);
+            IsolatedStorageFileStream storageFileStream = new IsolatedStorageFileStream("ffmpeg_settings_3.txt", FileMode.Create, storageFile);
+            StreamWriter streamWriter = new StreamWriter(storageFileStream);
+            string key = Encrypt(CryptoKey, appId);
+            streamWriter.WriteLine(key);
+            streamWriter.Dispose();
+            storageFileStream.Dispose();
+        }
+        //[NonAction]
+        [HttpGet]
+        public string IsolatedStorage_ReadAppId()
+        {
+            string CryptoKey = "samrat";
+            IsolatedStorageFile storageFile = IsolatedStorageFile.GetStore(IsolatedStorageScope.User | IsolatedStorageScope.Assembly, null, null);
+            IsolatedStorageFileStream storageFileStreamOpen = new IsolatedStorageFileStream("ffmpeg_settings_3.txt", FileMode.OpenOrCreate, storageFile);
+            StreamReader streamReader = new StreamReader(storageFileStreamOpen);
+            string keyRead = streamReader.ReadLine();
+            keyRead = Decrypt(CryptoKey, keyRead);
+            streamReader.Dispose();
+            storageFileStreamOpen.Dispose();
+            return keyRead;
         }
         #endregion
 

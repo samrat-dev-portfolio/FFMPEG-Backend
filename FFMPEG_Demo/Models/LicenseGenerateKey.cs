@@ -32,4 +32,13 @@ namespace FFMPEG_Demo.Models
         public string clientName { get; set; }
         public string description { get; set; }
     }
+    public class KeyActivation
+    {
+        public string appId { get; set; }
+        public string serialKey { get; set; }
+        public string deviceId { get; set; }
+        public string clientName { get; set; }
+        public string description { get; set; }
+        public string activationDate { get; set; }
+    }
 }
