@@ -307,6 +307,20 @@
     <Content Include="static\media\fa-brands-400.216edb96.svg" />
     <Content Include="static\media\fa-regular-400.19e27d34.svg" />
     <Content Include="static\media\fa-solid-900.13de59f1.svg" />
+    <Content Include="static_user_files\css\2.6d9d030f.chunk.css" />
+    <Content Include="static_user_files\css\main.762d4438.chunk.css" />
+    <Content Include="static_user_files\index.html" />
+    <Content Include="static_user_files\js\2.7a39ba1e.chunk.js" />
+    <Content Include="static_user_files\js\2.7a39ba1e.chunk.js.LICENSE.txt" />
+    <Content Include="static_user_files\js\main.c88c91ec.chunk.js" />
+    <Content Include="static_user_files\js\runtime-main.f60bdb19.js" />
+    <Content Include="static_user_files\media\arrow_left.2b063d13.svg" />
+    <Content Include="static_user_files\media\arrow_right.0897f985.svg" />
+    <Content Include="static_user_files\media\bg.4934216b.jpg" />
+    <Content Include="static_user_files\media\e-bg-1.38696b84.png" />
+    <Content Include="static_user_files\media\fa-brands-400.216edb96.svg" />
+    <Content Include="static_user_files\media\fa-regular-400.19e27d34.svg" />
+    <Content Include="static_user_files\media\fa-solid-900.13de59f1.svg" />
     <Content Include="XmlMenu\cls_10_Eng.xml" />
     <Content Include="XmlMenu\cls_10_L_Sc.xml" />
     <Content Include="XmlMenu\cls_10_Math.xml" />
@@ -483,6 +497,23 @@
     <Content Include="static\media\fa-solid-900.c6ec0800.woff" />
     <Content Include="static\media\fa-solid-900.efbd5d20.eot" />
     <Content Include="Views\Admin\Index.cshtml" />
+    <Content Include="static_user_files\css\2.6d9d030f.chunk.css.map" />
+    <Content Include="static_user_files\css\main.762d4438.chunk.css.map" />
+    <Content Include="static_user_files\js\2.7a39ba1e.chunk.js.map" />
+    <Content Include="static_user_files\js\main.c88c91ec.chunk.js.map" />
+    <Content Include="static_user_files\js\runtime-main.f60bdb19.js.map" />
+    <Content Include="static_user_files\media\fa-brands-400.329a95a9.woff" />
+    <Content Include="static_user_files\media\fa-brands-400.89a52ae1.eot" />
+    <Content Include="static_user_files\media\fa-brands-400.9e138496.ttf" />
+    <Content Include="static_user_files\media\fa-brands-400.c1210e5e.woff2" />
+    <Content Include="static_user_files\media\fa-regular-400.1017bce8.ttf" />
+    <Content Include="static_user_files\media\fa-regular-400.36722648.woff" />
+    <Content Include="static_user_files\media\fa-regular-400.4079ae2d.eot" />
+    <Content Include="static_user_files\media\fa-regular-400.68c5af1f.woff2" />
+    <Content Include="static_user_files\media\fa-solid-900.07c3313b.ttf" />
+    <Content Include="static_user_files\media\fa-solid-900.ada6e6df.woff2" />
+    <Content Include="static_user_files\media\fa-solid-900.c6ec0800.woff" />
+    <Content Include="static_user_files\media\fa-solid-900.efbd5d20.eot" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
